@@ -1265,54 +1265,57 @@
 
             // WebSocket Connection Management
             connectWebSocket() {
-                const url = document.getElementById('wsUrl').value.trim();
-                if (!url) {
-                    this.addWebSocketLog('Please enter a WebSocket URL', 'error');
-                    return;
-                }
-
-                // Update configuration
-                this.wsConfig.url = url;
-                this.wsConfig.crashThreshold = parseFloat(document.getElementById('crashThreshold').value);
-                this.wsConfig.messageFormat = document.querySelector('input[name="messageFormat"]:checked').value;
-                this.wsConfig.customPath = document.getElementById('customPath').value.trim();
-                this.saveWebSocketConfig();
-
-                this.addWebSocketLog(`Connecting to ${url}...`, 'info');
-                this.updateConnectionStatus('connecting', 'Connecting...');
-
-                try {
-                    this.websocket = new WebSocket(url);
-                    
-                    this.websocket.onopen = (event) => {
-                        this.connectionStartTime = new Date();
-                        this.updateConnectionStatus('connected', 'Connected');
-                        this.addWebSocketLog('✅ WebSocket connected successfully', 'success');
-                        this.startConnectionTimer();
-                        document.getElementById('liveDataSection').style.display = 'block';
-                    };
-
-                    this.websocket.onmessage = (event) => {
-                        this.handleWebSocketMessage(event.data);
-                    };
-
-                    this.websocket.onclose = (event) => {
-                        this.updateConnectionStatus('disconnected', 'Disconnected');
-                        this.addWebSocketLog(`❌ Connection closed (Code: ${event.code})`, 'warning');
-                        this.stopConnectionTimer();
-                        document.getElementById('liveDataSection').style.display = 'none';
-                    };
-
-                    this.websocket.onerror = (error) => {
-                        this.addWebSocketLog('❌ WebSocket error occurred', 'error');
-                        this.updateConnectionStatus('disconnected', 'Connection Error');
-                    };
-
-                } catch (error) {
-                    this.addWebSocketLog(`❌ Failed to connect: ${error.message}`, 'error');
-                    this.updateConnectionStatus('disconnected', 'Connection Failed');
-                }
+            const url = document.getElementById('wsUrl').value.trim();
+            if (!url) {
+                this.addWebSocketLog('Please enter a WebSocket URL', 'error');
+                return;
             }
+
+            // Update configuration
+            this.wsConfig.url = url;
+            this.wsConfig.crashThreshold = parseFloat(document.getElementById('crashThreshold').value);
+            this.wsConfig.messageFormat = document.querySelector('input[name="messageFormat"]:checked').value;
+            this.wsConfig.customPath = document.getElementById('customPath').value.trim();
+            this.saveWebSocketConfig();
+
+            this.addWebSocketLog(`Connecting to ${url}...`, 'info');
+            this.updateConnectionStatus('connecting', 'Connecting...');
+
+            try {
+                this.websocket = new WebSocket(url);
+
+                this.websocket.onopen = (event) => {
+                    this.connectionStartTime = new Date();
+                    this.updateConnectionStatus('connected', 'Connected');
+                    this.addWebSocketLog('✅ WebSocket connected successfully', 'success');
+                    this.startConnectionTimer();
+                    document.getElementById('liveDataSection').style.display = 'block';
+
+                    // 🔑 Send SignalR handshake
+                    this.websocket.send(JSON.stringify({ protocol: "json", version: 1 }) + "\u001e");
+                };
+
+                this.websocket.onmessage = (event) => {
+                    this.handleWebSocketMessage(event.data);
+                };
+
+                this.websocket.onclose = (event) => {
+                    this.updateConnectionStatus('disconnected', 'Disconnected');
+                    this.addWebSocketLog(`❌ Connection closed (Code: ${event.code})`, 'warning');
+                    this.stopConnectionTimer();
+                    document.getElementById('liveDataSection').style.display = 'none';
+                };
+
+                this.websocket.onerror = (error) => {
+                    this.addWebSocketLog('❌ WebSocket error occurred', 'error');
+                    this.updateConnectionStatus('disconnected', 'Connection Error');
+                };
+
+            } catch (error) {
+                this.addWebSocketLog(`❌ Failed to connect: ${error.message}`, 'error');
+                this.updateConnectionStatus('disconnected', 'Connection Failed');
+            }
+        }
 
             disconnectWebSocket() {
                 if (this.websocket) {
@@ -1323,89 +1326,51 @@
                 }
             }
 
-            handleWebSocketMessage(data) {
-                this.messagesReceived++;
-                document.getElementById('messagesReceived').textContent = this.messagesReceived;
+           handleWebSocketMessage(data) {
+    this.messagesReceived++;
+    document.getElementById('messagesReceived').textContent = this.messagesReceived;
 
-                // Remove control characters like \u001e
-                const cleanData = data.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+    // 🔹 Clean control characters (\u001e and others)
+    const cleanData = data.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
 
-                // Log raw (cleaned) message
-                const truncatedData = cleanData.length > 200 ? cleanData.substring(0, 200) + '...' : cleanData;
-                this.addWebSocketLog(`📨 Raw: ${truncatedData}`, 'info');
+    // Log raw message (truncated)
+    const truncatedData = cleanData.length > 200 ? cleanData.substring(0, 200) + '...' : cleanData;
+    this.addWebSocketLog(`📨 Raw: ${truncatedData}`, 'info');
 
-                try {
-                    let crashValue = null;
-                    const jsonData = this.parseJsonMessage(cleanData);
+    try {
+        let crashValue = null;
+        const jsonData = this.parseJsonMessage(cleanData);
 
-                    if (jsonData && jsonData.arguments && jsonData.arguments[0] && jsonData.arguments[0].f) {
-                        crashValue = jsonData.arguments[0].f;
-                    }
-
-                    if (crashValue !== null && !isNaN(crashValue)) {
-                        this.processCrashValue(crashValue);
-                    }
-                } catch (error) {
-                    this.addWebSocketLog(`❌ Parse error: ${error.message}`, 'error');
-                }
+        if (jsonData) {
+            // SignalR "OnCrash" event
+            if (jsonData.target === "OnCrash" && jsonData.arguments && jsonData.arguments[0]) {
+                crashValue = jsonData.arguments[0].f;
             }
+        }
 
+        if (crashValue !== null && !isNaN(crashValue) && crashValue > 0) {
+            this.processCrashValue(crashValue);
+        }
 
-            parseJsonMessage(data) {
-                try {
-                    // Try to parse as regular JSON first
-                    return JSON.parse(data);
-                } catch (error) {
-                    try {
-                        // Handle Socket.IO format (messages often start with numbers like "42[...")
-                        const socketIORegex = /^\d+(.*)$/;
-                        const match = data.match(socketIORegex);
-                        if (match) {
-                            return JSON.parse(match[1]);
-                        }
-                        
-                        // Handle multiple JSON objects in one message
-                        const jsonObjects = data.split('\n').filter(line => line.trim());
-                        for (const line of jsonObjects) {
-                            try {
-                                return JSON.parse(line.trim());
-                            } catch (e) {
-                                continue;
-                            }
-                        }
-                        
-                        // Handle JSONL format (newline-delimited JSON)
-                        const lines = data.split(/\r?\n/);
-                        for (const line of lines) {
-                            if (line.trim()) {
-                                try {
-                                    return JSON.parse(line.trim());
-                                } catch (e) {
-                                    continue;
-                                }
-                            }
-                        }
-                        
-                        // Try to extract JSON from mixed content
-                        const jsonRegex = /\{.*\}/g;
-                        const jsonMatches = data.match(jsonRegex);
-                        if (jsonMatches) {
-                            for (const jsonStr of jsonMatches) {
-                                try {
-                                    return JSON.parse(jsonStr);
-                                } catch (e) {
-                                    continue;
-                                }
-                            }
-                        }
-                        
-                        throw new Error('No valid JSON found');
-                    } catch (secondError) {
-                        throw new Error(`JSON parse failed: ${error.message}`);
-                    }
-                }
-            }
+    } catch (error) {
+        this.addWebSocketLog(`❌ Parse error: ${error.message}`, 'error');
+    }
+}
 
+// --- JSON Parser with fallback ---
+parseJsonMessage(data) {
+    try {
+        return JSON.parse(data);
+    } catch (error) {
+        // Try extracting JSON object if extra data exists
+        const jsonRegex = /\{.*\}/;
+        const match = data.match(jsonRegex);
+        if (match) {
+            return JSON.parse(match[0]);
+        }
+        throw error;
+    }
+}
             getNestedValue(obj, path) {
                 return path.split('.').reduce((current, key) => {
                     return current && current[key] !== undefined ? current[key] : null;
