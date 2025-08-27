@@ -1417,7 +1417,7 @@
                         }
                         
                         // Try to extract JSON from mixed content
-                        const jsonRegex = /\{[^}]*\}/g;
+                        const jsonRegex = /\{.*\}/g;
                         const jsonMatches = data.match(jsonRegex);
                         if (jsonMatches) {
                             for (const jsonStr of jsonMatches) {
