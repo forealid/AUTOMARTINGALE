@@ -1326,60 +1326,30 @@
             handleWebSocketMessage(data) {
                 this.messagesReceived++;
                 document.getElementById('messagesReceived').textContent = this.messagesReceived;
-                
-                // Log raw message for debugging (truncated)
-                const truncatedData = data.length > 200 ? data.substring(0, 200) + '...' : data;
+
+                // Remove control characters like \u001e
+                const cleanData = data.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+
+                // Log raw (cleaned) message
+                const truncatedData = cleanData.length > 200 ? cleanData.substring(0, 200) + '...' : cleanData;
                 this.addWebSocketLog(`📨 Raw: ${truncatedData}`, 'info');
-                
+
                 try {
                     let crashValue = null;
-                    
-                    // Handle different message formats
-                    switch (this.wsConfig.messageFormat) {
-                        case 'json':
-                    // Enhanced JSON parsing with multiple fallback methods
-                    const jsonData = this.parseJsonMessage(data);
-                    if (jsonData) {
-                        // Try multiple common field names for crash values
-                        crashValue = jsonData.crash || 
-                                   jsonData.multiplier || 
-                                   jsonData.value || 
-                                   jsonData.result || 
-                                   jsonData.crashPoint || 
-                                   jsonData.bust || 
-                                   jsonData.outcome ||
-                                   jsonData.payout ||
-                                   (jsonData.data && (jsonData.data.crash || jsonData.data.multiplier || jsonData.data.result)) ||
-                                   (jsonData.game && (jsonData.game.crash || jsonData.game.multiplier || jsonData.game.result));
-                    }
-                            
-                        case 'plain':
-                            crashValue = parseFloat(data.trim());
-                            break;
-                            
-                        case 'custom':
-                            if (this.wsConfig.customPath) {
-                                const jsonData = this.parseJsonMessage(data);
-                                if (jsonData) {
-                                    crashValue = this.getNestedValue(jsonData, this.wsConfig.customPath);
-                                }
-                            }
-                            break;
+                    const jsonData = this.parseJsonMessage(cleanData);
+
+                    if (jsonData && jsonData.arguments && jsonData.arguments[0] && jsonData.arguments[0].f) {
+                        crashValue = jsonData.arguments[0].f;
                     }
 
-                    if (crashValue !== null && !isNaN(crashValue) && crashValue > 0) {
+                    if (crashValue !== null && !isNaN(crashValue)) {
                         this.processCrashValue(crashValue);
-                    } else {
-                        // Don't log every failed parse to avoid spam, just count them
-                        if (this.messagesReceived % 10 === 0) {
-                            this.addWebSocketLog(`⚠️ No valid crash value found in last 10 messages`, 'warning');
-                        }
                     }
-                    
                 } catch (error) {
                     this.addWebSocketLog(`❌ Parse error: ${error.message}`, 'error');
                 }
             }
+
 
             parseJsonMessage(data) {
                 try {
