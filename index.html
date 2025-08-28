@@ -1296,7 +1296,7 @@
                 };
 
                 this.websocket.onmessage = (event) => {
-                    this.handleWebSocketMessage(event.data);
+                    this.Message(event.data);
                 };
 
                 this.websocket.onclose = (event) => {
@@ -1330,32 +1330,33 @@
     this.messagesReceived++;
     document.getElementById('messagesReceived').textContent = this.messagesReceived;
 
-    // 🔹 Clean control characters (\u001e and others)
-    const cleanData = data.replace(/[\u0000-\u001F\u007F-\u009F]/g, "").trim();
+    // Split into multiple SignalR frames
+    const frames = data.split("\u001e").filter(f => f.trim().length > 0);
 
-    // Log raw message (truncated)
-    const truncatedData = cleanData.length > 200 ? cleanData.substring(0, 200) + '...' : cleanData;
-    this.addWebSocketLog(`📨 Raw: ${truncatedData}`, 'info');
+    for (const frame of frames) {
+        try {
+            const msg = JSON.parse(frame);
 
-    try {
-        let crashValue = null;
-        const jsonData = this.parseJsonMessage(cleanData);
+            // Log raw message
+            this.addWebSocketLog(`📨 Frame: ${frame}`, 'info');
 
-        if (jsonData) {
-            // SignalR "OnCrash" event
-            if (jsonData.target === "OnCrash" && jsonData.arguments && jsonData.arguments[0]) {
-                crashValue = jsonData.arguments[0].f;
+            // Handle OnCrash messages
+            if (msg.type === 1 && msg.target === "OnCrash" && msg.arguments?.[0]?.f) {
+                const crashValue = msg.arguments[0].f;
+                this.processCrashValue(crashValue);
             }
-        }
 
-        if (crashValue !== null && !isNaN(crashValue) && crashValue > 0) {
-            this.processCrashValue(crashValue);
-        }
+            // Handle pings (optional)
+            else if (msg.type === 6) {
+                this.addWebSocketLog("💓 Ping", "info");
+            }
 
-    } catch (error) {
-        this.addWebSocketLog(`❌ Parse error: ${error.message}`, 'error');
+        } catch (err) {
+            this.addWebSocketLog(`❌ Parse error: ${err.message}`, 'error');
+        }
     }
 }
+
 
 // --- JSON Parser with fallback ---
 parseJsonMessage(data) {
