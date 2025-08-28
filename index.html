@@ -1330,23 +1330,33 @@
     this.messagesReceived++;
     document.getElementById('messagesReceived').textContent = this.messagesReceived;
 
-    // Split into multiple SignalR frames
+    // Split multiple SignalR frames by \u001e
     const frames = data.split("\u001e").filter(f => f.trim().length > 0);
 
     for (const frame of frames) {
         try {
             const msg = JSON.parse(frame);
 
-            // Log raw message
-            this.addWebSocketLog(`📨 Frame: ${frame}`, 'info');
+            // Log frame (optional, truncate long messages)
+            const truncated = frame.length > 200 ? frame.substring(0,200) + '...' : frame;
+            this.addWebSocketLog(`📨 Frame: ${truncated}`, 'info');
 
-            // Handle OnCrash messages
+            // --- Handle OnCrash ---
             if (msg.type === 1 && msg.target === "OnCrash" && msg.arguments?.[0]?.f) {
                 const crashValue = msg.arguments[0].f;
                 this.processCrashValue(crashValue);
             }
 
-            // Handle pings (optional)
+            // --- Handle OnRegistration (game history, last crash values) ---
+            else if (msg.type === 1 && msg.target === "OnRegistration" && msg.arguments?.[0]?.fs) {
+                msg.arguments[0].fs.forEach(entry => {
+                    if (entry.f) {
+                        this.processCrashValue(entry.f);
+                    }
+                });
+            }
+
+            // --- Handle pings ---
             else if (msg.type === 6) {
                 this.addWebSocketLog("💓 Ping", "info");
             }
@@ -1356,6 +1366,7 @@
         }
     }
 }
+
 
 
 // --- JSON Parser with fallback ---
