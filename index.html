@@ -2,1480 +2,601 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MARTINGALE AI PREDICTOR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR WebSocket Protocol Demo</title>
     <style>
-        :root {
-            --primary-bg: linear-gradient(135deg, #0a0e27 0%, #1a1d3a 100%);
-            --secondary-bg: rgba(30, 34, 52, 0.95);
-            --accent-green: #00ff88;
-            --accent-red: #ff4757;
-            --accent-blue: #3742fa;
-            --accent-purple: #a55eea;
-            --accent-orange: #ff9500;
-            --text-primary: #ffffff;
-            --text-secondary: #b8bcc8;
-            --text-muted: #8b92b3;
-            --glass-effect: rgba(255, 255, 255, 0.05);
-            --shadow-glow: 0 0 20px rgba(0, 255, 136, 0.3);
-            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.4);
-            --border-radius: 16px;
-            --border-radius-small: 12px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--primary-bg);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-            user-select: none;
-        }
-
-        /* Animated neural network background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 10% 20%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(58, 66, 250, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(165, 94, 234, 0.1) 0%, transparent 50%);
-            animation: neuralPulse 8s ease-in-out infinite;
-            z-index: -1;
-        }
-
-        @keyframes neuralPulse {
-            0%, 100% { opacity: 0.8; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
+            background: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 450px;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 15px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
         }
 
-        /* Header */
-        .header {
+        h1 {
             text-align: center;
-            margin-bottom: 20px;
-            backdrop-filter: blur(20px);
-            background: var(--glass-effect);
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
+
+        .connection-panel {
+            background: #2d2d2d;
+            border-radius: 8px;
             padding: 20px;
-            border-radius: var(--border-radius);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: var(--shadow-heavy);
+            margin-bottom: 20px;
+            border: 1px solid #444;
         }
 
-        .header h1 {
-            background: linear-gradient(45deg, var(--accent-green), var(--accent-blue), var(--accent-purple));
-            background-size: 200% 200%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            animation: gradientShift 3s ease-in-out infinite;
-            letter-spacing: -0.5px;
-        }
-
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        .header-subtitle {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        /* Navigation Tabs */
-        .nav-tabs {
-            display: flex;
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 5px;
+        .input-group {
             margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: var(--shadow-heavy);
         }
 
-        .nav-tab {
-            flex: 1;
-            padding: 12px 8px;
-            text-align: center;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-radius: var(--border-radius-small);
-            font-weight: 600;
-            font-size: 0.85rem;
-            transition: var(--transition);
-        }
-
-        .nav-tab.active {
-            background: var(--accent-blue);
-            color: white;
-            box-shadow: 0 2px 10px rgba(58, 66, 250, 0.3);
-        }
-
-        .nav-tab:not(.active):hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text-primary);
-        }
-
-        /* Tab Content */
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
+        label {
             display: block;
-        }
-
-        /* AI Status Card */
-        .ai-status {
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid var(--accent-green);
-            box-shadow: var(--shadow-glow);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .ai-status::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.1), transparent);
-            animation: aiScan 2s infinite;
-        }
-
-        @keyframes aiScan {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .ai-prediction {
-            font-size: 2.5rem;
-            font-weight: 800;
-            text-align: center;
-            margin-bottom: 10px;
-            text-shadow: 0 0 20px currentColor;
-        }
-
-        .ai-confidence {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .confidence-bar {
-            flex: 1;
-            height: 8px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-            margin: 0 15px;
-            overflow: hidden;
-        }
-
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-red), var(--accent-purple), var(--accent-green));
-            transition: width 0.5s ease;
-            border-radius: 4px;
-        }
-
-        .pattern-info {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        /* Martingale Controls */
-        .martingale-section {
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: var(--shadow-heavy);
-        }
-
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            text-align: center;
-            color: var(--accent-blue);
-        }
-
-        .result-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .result-btn {
-            padding: 20px;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-            min-height: 80px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .result-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transition: all 0.5s ease;
-            transform: translate(-50%, -50%);
-        }
-
-        .result-btn:active::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .win-btn {
-            background: linear-gradient(135deg, var(--accent-green), #00cc6a);
-            color: white;
-            box-shadow: 0 4px 20px rgba(0, 255, 136, 0.3);
-        }
-
-        .loss-btn {
-            background: linear-gradient(135deg, var(--accent-red), #e84057);
-            color: white;
-            box-shadow: 0 4px 20px rgba(255, 71, 87, 0.3);
-        }
-
-        .result-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-        }
-
-        .bet-icon {
-            font-size: 2rem;
             margin-bottom: 5px;
-        }
-
-        .bet-text {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        /* Martingale Stats */
-        .martingale-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .stat-item {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: var(--border-radius-small);
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .stat-value {
-            font-size: 1.1rem;
-            font-weight: 700;
-        }
-
-        /* Loss Streak Alert */
-        .streak-alert {
-            background: linear-gradient(135deg, var(--accent-red), #c44569);
-            color: white;
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 15px;
-            text-align: center;
             font-weight: 600;
-            animation: pulseAlert 2s infinite;
-            display: none;
+            color: #ccc;
         }
 
-        @keyframes pulseAlert {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        /* Pattern Recognition Display */
-        .pattern-section {
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid var(--accent-purple);
-            box-shadow: 0 0 20px rgba(165, 94, 234, 0.2);
-        }
-
-        .pattern-grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
-        }
-
-        .pattern-dot {
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: bold;
-            transition: var(--transition);
-        }
-
-        .pattern-dot.win {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .pattern-dot.loss {
-            background: var(--accent-red);
-            color: white;
-        }
-
-        .pattern-dot.predicted {
-            border: 2px solid var(--accent-blue);
-            background: rgba(58, 66, 250, 0.2);
-        }
-
-        /* Time Analytics Table */
-        .time-analytics-section {
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            margin-bottom: 15px;
-            border: 1px solid var(--accent-orange);
-            box-shadow: 0 0 20px rgba(255, 149, 0, 0.2);
-        }
-
-        .time-analytics-table {
+        input {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 0.7rem;
-            margin-bottom: 15px;
-        }
-
-        .time-analytics-table th {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px 4px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
-        .time-analytics-table td {
-            padding: 6px 4px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            font-weight: 600;
-            position: relative;
-        }
-
-        .time-analytics-table .hour-cell {
-            background: rgba(0, 0, 0, 0.2);
-            color: var(--text-secondary);
-            font-weight: 700;
-            width: 50px;
-        }
-
-        /* Color coding for win rates */
-        .win-rate-excellent { background: rgba(0, 255, 136, 0.3) !important; color: var(--accent-green) !important; }
-        .win-rate-good { background: rgba(58, 66, 250, 0.3) !important; color: var(--accent-blue) !important; }
-        .win-rate-average { background: rgba(255, 149, 0, 0.3) !important; color: var(--accent-orange) !important; }
-        .win-rate-poor { background: rgba(255, 71, 87, 0.3) !important; color: var(--accent-red) !important; }
-        .win-rate-dangerous { background: rgba(139, 69, 19, 0.3) !important; color: #ff6b6b !important; }
-
-        .safety-indicator {
-            font-size: 0.6rem;
-            position: absolute;
-            top: 1px;
-            right: 1px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .safety-safe { background: var(--accent-green); }
-        .safety-caution { background: var(--accent-orange); }
-        .safety-danger { background: var(--accent-red); }
-
-        .analytics-legend {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 15px;
-            font-size: 0.7rem;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .quick-btn {
-            padding: 12px;
-            border: none;
-            border-radius: var(--border-radius-small);
-            background: var(--secondary-bg);
-            color: var(--text-primary);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-
-        .quick-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-1px);
-        }
-
-        /* History Section */
-        .history-section {
-            flex: 1;
-            background: var(--secondary-bg);
-            backdrop-filter: blur(20px);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: var(--shadow-heavy);
-        }
-
-        .history-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .history-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .history-list::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 2px;
-        }
-
-        .history-list::-webkit-scrollbar-thumb {
-            background: var(--accent-blue);
-            border-radius: 2px;
-        }
-
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             padding: 10px;
-            margin-bottom: 5px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: var(--border-radius-small);
-            font-size: 0.85rem;
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 14px;
         }
 
-        .history-result {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.75rem;
+        input::placeholder {
+            color: #888;
         }
 
-        .history-result.win {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .history-result.loss {
-            background: var(--accent-red);
-            color: white;
-        }
-
-        /* Modal for settings */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
-        }
-
-        .modal-content {
-            background: var(--secondary-bg);
-            margin: 10% auto;
-            padding: 30px;
-            border-radius: var(--border-radius);
-            width: 90%;
-            max-width: 400px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .close {
-            color: var(--text-secondary);
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close:hover {
-            color: var(--text-primary);
-        }
-
-        /* Analytics Summary */
-        .analytics-summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .summary-card {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px;
-            border-radius: var(--border-radius-small);
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .summary-value {
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .summary-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        /* WebSocket Styles */
-        .websocket-status {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: var(--border-radius-small);
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .status-indicator {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--accent-red);
-            animation: pulse 2s infinite;
-        }
-
-        .status-indicator.connected {
-            background: var(--accent-green);
-            animation: none;
-        }
-
-        .status-indicator.connecting {
-            background: var(--accent-orange);
-            animation: pulse 1s infinite;
-        }
-
-        .websocket-config {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: var(--border-radius-small);
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .format-options {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: var(--border-radius-small);
-            font-size: 0.85rem;
-        }
-
-        .websocket-controls {
+        .button-group {
             display: flex;
             gap: 10px;
             margin-top: 15px;
         }
 
-        .websocket-btn {
-            flex: 1;
-            padding: 12px;
+        button {
+            padding: 10px 20px;
             border: none;
-            border-radius: var(--border-radius-small);
-            font-weight: 600;
+            border-radius: 4px;
             cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background-color 0.3s;
         }
 
         .connect-btn {
-            background: var(--accent-green);
+            background: #4CAF50;
             color: white;
+        }
+
+        .connect-btn:hover {
+            background: #45a049;
         }
 
         .connect-btn.disconnect {
-            background: var(--accent-red);
+            background: #f44336;
+        }
+
+        .connect-btn.disconnect:hover {
+            background: #da190b;
         }
 
         .test-btn {
-            background: var(--accent-blue);
+            background: #2196F3;
             color: white;
         }
 
-        .websocket-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        .test-btn:hover {
+            background: #0b7dda;
         }
 
-        .live-data-section {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: var(--border-radius-small);
-            margin-bottom: 20px;
-            border: 1px solid var(--accent-green);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+        .clear-btn {
+            background: #ff9800;
+            color: white;
         }
 
-        .live-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .clear-btn:hover {
+            background: #e68900;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
             gap: 10px;
             margin-bottom: 15px;
         }
 
-        .auto-results-list {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: var(--border-radius-small);
-            padding: 10px;
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
         }
 
-        .auto-result-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            margin-bottom: 5px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
-            font-size: 0.85rem;
+        .status-indicator.connected {
+            background: #4CAF50;
         }
 
-        .auto-result-item.win {
-            border-left: 3px solid var(--accent-green);
+        .status-indicator.connecting {
+            background: #ff9800;
         }
 
-        .auto-result-item.loss {
-            border-left: 3px solid var(--accent-red);
+        .data-panel {
+            background: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
         }
 
-        .websocket-logs {
-            margin-top: 20px;
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
-        .logs-container {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: var(--border-radius-small);
+        .stat-item {
+            background: #1a1a1a;
             padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #555;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #4CAF50;
+        }
+
+        .crash-history {
+            margin-bottom: 20px;
+        }
+
+        .crash-values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .crash-value {
+            background: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
             font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
         }
 
         .log-entry {
-            margin-bottom: 5px;
-            padding: 3px 0;
+            padding: 8px 12px;
+            border-bottom: 1px solid #333;
+            word-wrap: break-word;
         }
 
-        .log-entry.success {
-            color: var(--accent-green);
-        }
-
-        .log-entry.error {
-            color: var(--accent-red);
+        .log-entry:last-child {
+            border-bottom: none;
         }
 
         .log-entry.info {
-            color: var(--accent-blue);
+            color: #2196F3;
+        }
+
+        .log-entry.success {
+            color: #4CAF50;
         }
 
         .log-entry.warning {
-            color: var(--accent-orange);
+            color: #ff9800;
         }
 
-        /* Connection time animation */
-        @keyframes connectionPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+        .log-entry.error {
+            color: #f44336;
         }
 
-        .connection-time-active {
-            animation: connectionPulse 2s infinite;
-        }
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .ai-prediction {
-                font-size: 2rem;
-            }
-            
-            .result-btn {
-                min-height: 70px;
-                padding: 15px;
-            }
-            
-            .bet-icon {
-                font-size: 1.5rem;
-            }
-
-            .time-analytics-table {
-                font-size: 0.6rem;
-            }
-
-            .time-analytics-table th,
-            .time-analytics-table td {
-                padding: 4px 2px;
-            }
+        .log-entry.crash {
+            color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+            font-weight: 600;
         }
 
-        /* Loading animation for AI processing */
-        .ai-loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(0, 255, 136, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--accent-green);
-            animation: spin 1s ease-in-out infinite;
+        .log-entry.history {
+            color: #9C27B0;
+            background: rgba(156, 39, 176, 0.1);
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .timestamp {
+            color: #666;
+            font-size: 11px;
         }
 
-        /* Haptic feedback simulation */
-        .vibrate {
-            animation: vibrate 0.3s ease-in-out;
+        .educational-note {
+            background: #2d2d2d;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
         }
 
-        @keyframes vibrate {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-2px); }
-            75% { transform: translateX(2px); }
+        .educational-note h3 {
+            margin: 0 0 10px 0;
+            color: #2196F3;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(1.1); }
+        .frame-structure {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            border: 1px solid #555;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🧠 MARTINGALE AI PREDICTOR</h1>
-            <div class="header-subtitle">Neural Pattern Recognition</div>
+        <h1>SignalR WebSocket Protocol Demo</h1>
+        
+        <div class="educational-note">
+            <h3>Educational Purpose</h3>
+            <p>This demo demonstrates how SignalR protocol works over WebSockets, including:</p>
+            <ul>
+                <li>Frame separation using \u001e delimiter</li>
+                <li>JSON message parsing and structure</li>
+                <li>Protocol handshake and hub invocations</li>
+                <li>Message type handling (OnCrash, OnRegistration, etc.)</li>
+            </ul>
+            <div class="frame-structure">
+                SignalR Frame Structure:<br>
+                {"protocol":"json","version":1}\u001e (handshake)<br>
+                {"arguments":[...],"invocationId":"1","target":"Hub","type":1}\u001e (invoke)<br>
+                {"type":1,"target":"OnCrash","arguments":[{"f":2.45}]}\u001e (server message)
+            </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('predictor')">🎯 Predictor</button>
-            <button class="nav-tab" onclick="switchTab('analytics')">📊 Analytics</button>
-            <button class="nav-tab" onclick="switchTab('websocket')">🔗 Auto Mode</button>
+        <div class="connection-panel">
+            <h3>Connection Settings</h3>
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="connectionStatus">Disconnected</span>
+            </div>
+            
+            <div class="input-group">
+                <label for="wsUrl">WebSocket URL:</label>
+                <input type="text" id="wsUrl" placeholder="wss://example.com/socket" value="">
+            </div>
+            
+            <div class="input-group">
+                <label for="accountId">Account ID (for hub invocation):</label>
+                <input type="text" id="accountId" placeholder="123456789" value="">
+            </div>
+            
+            <div class="button-group">
+                <button id="connectBtn" class="connect-btn" onclick="toggleConnection()">Connect</button>
+                <button class="test-btn" onclick="testWithSampleData()">Test with Sample Data</button>
+                <button class="clear-btn" onclick="clearLog()">Clear Log</button>
+            </div>
         </div>
 
-        <!-- Predictor Tab -->
-        <div id="predictor-tab" class="tab-content active">
-            <div class="ai-status">
-                <div class="ai-prediction" id="aiPrediction">INITIALIZING</div>
-                <div class="ai-confidence">
-                    <span>Confidence</span>
-                    <div class="confidence-bar">
-                        <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
-                    </div>
-                    <span id="confidenceText">0%</span>
+        <div class="data-panel">
+            <h3>Live Data</h3>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Messages Received</div>
+                    <div class="stat-value" id="messagesReceived">0</div>
                 </div>
-                <div class="pattern-info" id="patternInfo">Learning patterns...</div>
-            </div>
-
-            <div class="streak-alert" id="streakAlert">
-                ⚠️ HIGH LOSS STREAK DETECTED - CONSIDER STOPPING
-            </div>
-
-            <div class="martingale-section">
-                <div class="section-title">Record Result</div>
-                <div class="result-buttons">
-                    <button class="result-btn win-btn" onclick="recordResult(true)">
-                        <div class="bet-icon">✅</div>
-                        <div class="bet-text">WIN</div>
-                        <div class="bet-text">(≥2.00x)</div>
-                    </button>
-                    <button class="result-btn loss-btn" onclick="recordResult(false)">
-                        <div class="bet-icon">❌</div>
-                        <div class="bet-text">LOSS</div>
-                        <div class="bet-text">(<2.00x)</div>
-                    </button>
+                <div class="stat-item">
+                    <div class="stat-label">Last Crash Value</div>
+                    <div class="stat-value" id="lastCrashValue">--</div>
                 </div>
-
-                <div class="martingale-stats">
-                    <div class="stat-item">
-                        <div class="stat-label">Current Streak</div>
-                        <div class="stat-value" id="currentStreak">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Max Streak</div>
-                        <div class="stat-value" id="maxStreak">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Win Rate</div>
-                        <div class="stat-value" id="winRate">0%</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Total Bets</div>
-                        <div class="stat-value" id="totalBets">0</div>
-                    </div>
+                <div class="stat-item">
+                    <div class="stat-label">Connection Time</div>
+                    <div class="stat-value" id="connectionTime">--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Frames Processed</div>
+                    <div class="stat-value" id="framesProcessed">0</div>
                 </div>
             </div>
 
-            <div class="pattern-section">
-                <div class="section-title">Pattern Recognition</div>
-                <div class="pattern-grid" id="patternGrid"></div>
-                <div style="text-align: center; font-size: 0.8rem; color: var(--text-muted);">
-                    Last 20 results - AI analyzes patterns for prediction
-                </div>
-            </div>
-
-            <div class="quick-actions">
-                <button class="quick-btn" onclick="resetStreak()">Reset Streak</button>
-                <button class="quick-btn" onclick="showSettings()">⚙️ Settings</button>
-                <button class="quick-btn" onclick="exportData()">📊 Export</button>
-                <button class="quick-btn" onclick="clearAll()">🗑️ Clear All</button>
-            </div>
-
-            <div class="history-section">
-                <div class="section-title">Recent History</div>
-                <div class="history-list" id="historyList">
-                    <div style="text-align: center; padding: 30px; opacity: 0.5;">
-                        No results recorded yet
-                    </div>
+            <div class="crash-history">
+                <h4>Recent Crash History:</h4>
+                <div class="crash-values" id="crashHistory">
+                    <span style="color: #666; font-style: italic;">No crash values received yet</span>
                 </div>
             </div>
         </div>
 
-        <!-- Analytics Tab -->
-        <div id="analytics-tab" class="tab-content">
-            <div class="time-analytics-section">
-                <div class="section-title">📊 Time-Based Analytics</div>
-                
-                <!-- Summary Cards -->
-                <div class="analytics-summary">
-                    <div class="summary-card">
-                        <div class="summary-value" id="bestTimeSlot">--</div>
-                        <div class="summary-label">Best Hour</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-value" id="worstTimeSlot">--</div>
-                        <div class="summary-label">Worst Hour</div>
-                    </div>
-                    <div class="summary-card">
-                        <div class="summary-value" id="safeHours">--</div>
-                        <div class="summary-label">Safe Hours</div>
-                    </div>
-                </div>
-
-                <!-- Time Analytics Table -->
-                <table class="time-analytics-table">
-                    <thead>
-                        <tr>
-                            <th>Hour</th>
-                            <th>Sun</th>
-                            <th>Mon</th>
-                            <th>Tue</th>
-                            <th>Wed</th>
-                            <th>Thu</th>
-                            <th>Fri</th>
-                            <th>Sat</th>
-                        </tr>
-                    </thead>
-                    <tbody id="timeAnalyticsTableBody">
-                        <!-- Table rows will be populated by JavaScript -->
-                    </tbody>
-                </table>
-
-                <!-- Legend -->
-                <div class="analytics-legend">
-                    <div class="legend-item">
-                        <div class="legend-color win-rate-excellent"></div>
-                        <span>Excellent (≥60%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color win-rate-good"></div>
-                        <span>Good (50-59%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color win-rate-average"></div>
-                        <span>Average (40-49%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color win-rate-poor"></div>
-                        <span>Poor (30-39%)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color win-rate-dangerous"></div>
-                        <span>Dangerous (<30%)</span>
-                    </div>
-                </div>
-
-                <div style="margin-top: 15px; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-                    • Green dot = Safe for Martingale | Orange dot = Use caution | Red dot = High risk<br>
-                    • N/A = Insufficient data (less than 5 bets)
-                </div>
-            </div>
-        </div>
-
-        <!-- WebSocket Auto Mode Tab -->
-        <div id="websocket-tab" class="tab-content">
-            <div class="martingale-section">
-                <div class="section-title">🔗 WebSocket Auto Mode</div>
-                
-                <!-- Connection Status -->
-                <div class="websocket-status" id="websocketStatus">
-                    <div class="status-indicator" id="statusIndicator"></div>
-                    <div class="status-text">
-                        <div id="connectionStatus">Disconnected</div>
-                        <div id="connectionDetails" style="font-size: 0.8rem; opacity: 0.7;">Ready to connect</div>
-                    </div>
-                </div>
-
-                <!-- WebSocket Configuration -->
-                <div class="websocket-config">
-                    <div style="margin-bottom: 15px;">
-                        <label for="wsUrl" style="display: block; margin-bottom: 5px; font-weight: 600;">WebSocket URL:</label>
-                        <input type="text" id="wsUrl" placeholder="wss://example.com/socket" 
-                               style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;">
-                        <div style="font-size: 0.7rem; opacity: 0.7; margin-top: 5px;">
-                            Examples: wss://bc.game/socket.io/?EIO=4&transport=websocket<br>
-                            wss://stake.com/socket.io/?EIO=4&transport=websocket
-                        </div>
-                    </div>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label for="crashThreshold" style="display: block; margin-bottom: 5px; font-weight: 600;">Win Threshold (≥):</label>
-                        <input type="number" id="crashThreshold" value="2.00" step="0.01" min="1.01" max="100"
-                               style="width: 100%; padding: 10px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px;">
-                        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 5px;">Values ≥ this threshold count as WIN, below as LOSS</div>
-                    </div>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 10px; font-weight: 600;">Message Format:</label>
-                        <div class="format-options">
-                            <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
-                                <input type="radio" name="messageFormat" value="json" checked style="margin-right: 8px;">
-                                Smart JSON (Auto-detects crash/multiplier/result fields)
-                            </label>
-                            <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
-                                <input type="radio" name="messageFormat" value="plain" style="margin-right: 8px;">
-                                Plain Number: 2.45
-                            </label>
-                            <label style="display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;">
-                                <input type="radio" name="messageFormat" value="custom" style="margin-right: 8px;">
-                                Custom JSON Path
-                            </label>
-                        </div>
-                        
-                        <div id="customPathDiv" style="display: none; margin-top: 10px;">
-                            <input type="text" id="customPath" placeholder="e.g., data.result.crashValue"
-                                   style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px;">
-                        </div>
-                    </div>
-
-                    <div class="websocket-controls">
-                        <button id="connectBtn" onclick="toggleWebSocket()" class="websocket-btn connect-btn">
-                            🔗 Connect
-                        </button>
-                        <button onclick="testConnection()" class="websocket-btn test-btn">
-                            🧪 Test
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Message Debug Helper -->
-                <div style="margin-bottom: 20px;">
-                    <details style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                        <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">🔧 Debug Helper</summary>
-                        <div style="font-size: 0.85rem;">
-                            <p style="margin-bottom: 10px;">If you're getting parsing errors, try these solutions:</p>
-                            <ul style="margin-left: 20px; line-height: 1.6;">
-                                <li><strong>Socket.IO format:</strong> Enable "Smart JSON" - it handles Socket.IO prefixes automatically</li>
-                                <li><strong>Multiple JSON objects:</strong> The system tries to parse each line separately</li>
-                                <li><strong>Nested data:</strong> Use "Custom JSON Path" like "data.game.crashPoint"</li>
-                                <li><strong>Mixed content:</strong> Smart JSON extracts JSON from mixed text</li>
-                            </ul>
-                            <div style="margin-top: 10px; padding: 10px; background: rgba(0,255,136,0.1); border-radius: 6px;">
-                                <strong>💡 Tip:</strong> Check the raw messages in the log below to see the exact format your server sends.
-                            </div>
-                        </div>
-                    </details>
-                </div>
-
-                <!-- Live Data Display -->
-                <div class="live-data-section" id="liveDataSection" style="display: none;">
-                    <div class="section-title">📡 Live Data Stream</div>
-                    
-                    <div class="live-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">Messages Received</div>
-                            <div class="stat-value" id="messagesReceived">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Last Crash Value</div>
-                            <div class="stat-value" id="lastCrashValue">--</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Auto Results</div>
-                            <div class="stat-value" id="autoResultsCount">0</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Connection Time</div>
-                            <div class="stat-value" id="connectionTime">--</div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Auto Results -->
-                    <div class="recent-auto-results">
-                        <div style="font-weight: 600; margin-bottom: 10px;">Recent Auto Results:</div>
-                        <div id="autoResultsList" class="auto-results-list">
-                            <div style="text-align: center; opacity: 0.5; padding: 20px;">No auto results yet</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- WebSocket Logs -->
-                <div class="websocket-logs">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span style="font-weight: 600;">Connection Log:</span>
-                        <button onclick="clearWebSocketLogs()" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 0.8rem;">Clear</button>
-                    </div>
-                    <div id="websocketLogs" class="logs-container">
-                        <div style="opacity: 0.5;">Ready to connect...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeSettings()">&times;</span>
-            <h2>Settings</h2>
-            <div style="margin: 20px 0;">
-                <label for="maxStreakAlert">Max Loss Streak Alert:</label>
-                <input type="number" id="maxStreakAlert" value="5" min="3" max="15" style="margin-left: 10px; padding: 5px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px;">
-            </div>
-            <div style="margin: 20px 0;">
-                <label for="aiSensitivity">AI Sensitivity:</label>
-                <select id="aiSensitivity" style="margin-left: 10px; padding: 5px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px;">
-                    <option value="low">Low</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-            <button onclick="saveSettings()" style="width: 100%; padding: 10px; background: var(--accent-green); color: white; border: none; border-radius: 8px; cursor: pointer; margin-top: 15px;">Save Settings</button>
+        <div class="data-panel">
+            <h3>Protocol Log</h3>
+            <div class="log-container" id="log"></div>
         </div>
     </div>
 
     <script>
-        class MartingaleAI {
+        class SignalRWebSocketDemo {
             constructor() {
-                this.results = this.loadData();
-                this.currentStreak = 0;
-                this.maxStreak = 0;
-                this.settings = {
-                    maxStreakAlert: 5,
-                    aiSensitivity: 'medium'
-                };
-                this.loadSettings();
-                this.neuralWeights = this.initializeWeights();
-                this.patterns = new Map();
-                
-                // WebSocket properties
                 this.websocket = null;
-                this.wsConfig = this.loadWebSocketConfig();
-                this.connectionStartTime = null;
                 this.messagesReceived = 0;
-                this.autoResultsCount = 0;
+                this.framesProcessed = 0;
+                this.connectionStartTime = null;
                 this.connectionTimeInterval = null;
+                this.crashHistory = [];
                 
-                this.updateDisplay();
-                this.updateTimeAnalytics();
-                this.initializeWebSocketTab();
+                this.log('Demo initialized - Ready to connect', 'info');
             }
 
-            loadData() {
+            connect() {
+                const url = document.getElementById('wsUrl').value.trim();
+                const accountId = document.getElementById('accountId').value.trim();
+                
+                if (!url) {
+                    this.log('Please enter a WebSocket URL', 'error');
+                    return;
+                }
+
+                this.log(`Connecting to ${url}...`, 'info');
+                this.updateConnectionStatus('connecting');
+
                 try {
-                    const stored = localStorage.getItem('martingaleResults');
-                    return stored ? JSON.parse(stored) : [];
-                } catch (e) {
-                    return [];
+                    this.websocket = new WebSocket(url);
+
+                    this.websocket.onopen = () => {
+                        this.connectionStartTime = new Date();
+                        this.updateConnectionStatus('connected');
+                        this.log('WebSocket connected successfully', 'success');
+                        this.startConnectionTimer();
+
+                        // Send SignalR handshake
+                        this.sendHandshake();
+                        
+                        // Send account subscription if account ID provided
+                        if (accountId) {
+                            setTimeout(() => this.sendAccountSubscription(accountId), 100);
+                        }
+                    };
+
+                    this.websocket.onmessage = (event) => {
+                        this.handleMessage(event.data);
+                    };
+
+                    this.websocket.onclose = (event) => {
+                        this.updateConnectionStatus('disconnected');
+                        this.log(`Connection closed (Code: ${event.code})`, 'warning');
+                        this.stopConnectionTimer();
+                    };
+
+                    this.websocket.onerror = (error) => {
+                        this.log('WebSocket error occurred', 'error');
+                        this.updateConnectionStatus('disconnected');
+                    };
+
+                } catch (error) {
+                    this.log(`Failed to connect: ${error.message}`, 'error');
+                    this.updateConnectionStatus('disconnected');
                 }
             }
 
-            saveData() {
-                localStorage.setItem('martingaleResults', JSON.stringify(this.results));
-            }
-          saveSettings() {
-                localStorage.setItem('martingaleSettings', JSON.stringify(this.settings));
-            }
-
-            // WebSocket Configuration Management
-            loadWebSocketConfig() {
-                try {
-                    const stored = localStorage.getItem('martingaleWebSocketConfig');
-                    return stored ? JSON.parse(stored) : {
-                        url: '',
-                        crashThreshold: 2.00,
-                        messageFormat: 'json',
-                        customPath: ''
-                    };
-                } catch (e) {
-                    return {
-                        url: '',
-                        crashThreshold: 2.00,
-                        messageFormat: 'json',
-                        customPath: ''
-                    };
-                }
-            }
-
-            saveWebSocketConfig() {
-                localStorage.setItem('martingaleWebSocketConfig', JSON.stringify(this.wsConfig));
-            }
-
-            initializeWebSocketTab() {
-                // Load saved configuration
-                document.getElementById('wsUrl').value = this.wsConfig.url;
-                document.getElementById('crashThreshold').value = this.wsConfig.crashThreshold;
-                document.querySelector(`input[name="messageFormat"][value="${this.wsConfig.messageFormat}"]`).checked = true;
-                document.getElementById('customPath').value = this.wsConfig.customPath;
-                
-                // Show/hide custom path input based on format selection
-                this.toggleCustomPath();
-                
-                // Add event listeners
-                document.querySelectorAll('input[name="messageFormat"]').forEach(radio => {
-                    radio.addEventListener('change', () => this.toggleCustomPath());
-                });
-            }
-
-            toggleCustomPath() {
-                const customSelected = document.querySelector('input[name="messageFormat"]:checked').value === 'custom';
-                document.getElementById('customPathDiv').style.display = customSelected ? 'block' : 'none';
-            }
-
-            // WebSocket Connection Management
-            connectWebSocket() {
-            const url = document.getElementById('wsUrl').value.trim();
-            if (!url) {
-                this.addWebSocketLog('Please enter a WebSocket URL', 'error');
-                return;
-            }
-
-            // Update configuration
-            this.wsConfig.url = url;
-            this.wsConfig.crashThreshold = parseFloat(document.getElementById('crashThreshold').value);
-            this.wsConfig.messageFormat = document.querySelector('input[name="messageFormat"]:checked').value;
-            this.wsConfig.customPath = document.getElementById('customPath').value.trim();
-            this.saveWebSocketConfig();
-
-            this.addWebSocketLog(`Connecting to ${url}...`, 'info');
-            this.updateConnectionStatus('connecting', 'Connecting...');
-
-            try {
-                this.websocket = new WebSocket(url);
-
-                this.websocket.onopen = (event) => {
-                    this.connectionStartTime = new Date();
-                    this.updateConnectionStatus('connected', 'Connected');
-                    this.addWebSocketLog('✅ WebSocket connected successfully', 'success');
-                    this.startConnectionTimer();
-                    document.getElementById('liveDataSection').style.display = 'block';
-
-                    // 🔑 Send SignalR handshake
-                    this.websocket.send(JSON.stringify({ protocol: "json", version: 1 }) + "\u001e");
-                };
-
-                this.websocket.onmessage = (event) => {
-                    this.Message(event.data);
-                };
-
-                this.websocket.onclose = (event) => {
-                    this.updateConnectionStatus('disconnected', 'Disconnected');
-                    this.addWebSocketLog(`❌ Connection closed (Code: ${event.code})`, 'warning');
-                    this.stopConnectionTimer();
-                    document.getElementById('liveDataSection').style.display = 'none';
-                };
-
-                this.websocket.onerror = (error) => {
-                    this.addWebSocketLog('❌ WebSocket error occurred', 'error');
-                    this.updateConnectionStatus('disconnected', 'Connection Error');
-                };
-
-            } catch (error) {
-                this.addWebSocketLog(`❌ Failed to connect: ${error.message}`, 'error');
-                this.updateConnectionStatus('disconnected', 'Connection Failed');
-            }
-        }
-
-            disconnectWebSocket() {
+            disconnect() {
                 if (this.websocket) {
                     this.websocket.close();
                     this.websocket = null;
-                    this.addWebSocketLog('🔌 Disconnected by user', 'info');
+                    this.log('Disconnected by user', 'info');
                     this.stopConnectionTimer();
                 }
             }
 
-           handleWebSocketMessage(data) {
-    this.messagesReceived++;
-    document.getElementById('messagesReceived').textContent = this.messagesReceived;
-
-    // Split multiple SignalR frames by \u001e
-    const frames = data.split("\u001e").filter(f => f.trim().length > 0);
-
-    for (const frame of frames) {
-        try {
-            const msg = JSON.parse(frame);
-
-            // Log frame (optional, truncate long messages)
-            const truncated = frame.length > 200 ? frame.substring(0,200) + '...' : frame;
-            this.addWebSocketLog(`📨 Frame: ${truncated}`, 'info');
-
-            // --- Handle OnCrash ---
-            if (msg.type === 1 && msg.target === "OnCrash" && msg.arguments?.[0]?.f) {
-                const crashValue = msg.arguments[0].f;
-                this.processCrashValue(crashValue);
+            sendHandshake() {
+                const handshake = { protocol: "json", version: 1 };
+                const message = JSON.stringify(handshake) + "\u001e";
+                this.websocket.send(message);
+                this.log('Sent handshake: ' + JSON.stringify(handshake), 'info');
             }
 
-            // --- Handle OnRegistration (game history, last crash values) ---
-            else if (msg.type === 1 && msg.target === "OnRegistration" && msg.arguments?.[0]?.fs) {
-                msg.arguments[0].fs.forEach(entry => {
-                    if (entry.f) {
-                        this.processCrashValue(entry.f);
+            sendAccountSubscription(accountId) {
+                const subscription = {
+                    arguments: [{ activity: 30, account: parseInt(accountId) }],
+                    invocationId: "1",
+                    target: "Account",
+                    type: 1
+                };
+                const message = JSON.stringify(subscription) + "\u001e";
+                this.websocket.send(message);
+                this.log('Sent account subscription: ' + JSON.stringify(subscription), 'info');
+            }
+
+            handleMessage(data) {
+                this.messagesReceived++;
+                document.getElementById('messagesReceived').textContent = this.messagesReceived;
+
+                // Split frames by \u001e delimiter
+                const frames = data.split("\u001e").filter(f => f.trim().length > 0);
+                
+                this.log(`Received ${frames.length} frame(s) in message`, 'info');
+
+                for (const frame of frames) {
+                    this.processFrame(frame);
+                }
+            }
+
+            processFrame(frame) {
+                this.framesProcessed++;
+                document.getElementById('framesProcessed').textContent = this.framesProcessed;
+
+                try {
+                    // Handle empty frames (common with SignalR)
+                    if (!frame.trim()) {
+                        this.log('Empty frame (keepalive)', 'info');
+                        return;
                     }
-                });
-            }
 
-            // --- Handle pings ---
-            else if (msg.type === 6) {
-                this.addWebSocketLog("💓 Ping", "info");
-            }
+                    // Try to parse as JSON
+                    const message = JSON.parse(frame);
+                    this.log(`Frame parsed: ${JSON.stringify(message)}`, 'info');
 
-        } catch (err) {
-            this.addWebSocketLog(`❌ Parse error: ${err.message}`, 'error');
-        }
-    }
-}
+                    // Handle different message types
+                    this.handleSignalRMessage(message);
 
-
-
-// --- JSON Parser with fallback ---
-parseJsonMessage(data) {
-    try {
-        return JSON.parse(data);
-    } catch (error) {
-        // Try extracting JSON object if extra data exists
-        const jsonRegex = /\{.*\}/;
-        const match = data.match(jsonRegex);
-        if (match) {
-            return JSON.parse(match[0]);
-        }
-        throw error;
-    }
-}
-            getNestedValue(obj, path) {
-                return path.split('.').reduce((current, key) => {
-                    return current && current[key] !== undefined ? current[key] : null;
-                }, obj);
-            }
-
-            processCrashValue(crashValue) {
-                document.getElementById('lastCrashValue').textContent = crashValue.toFixed(2);
-                
-                // Determine if it's a win or loss based on threshold
-                const isWin = crashValue >= this.wsConfig.crashThreshold;
-                
-                // Record the result automatically
-                this.recordResult(isWin, true, crashValue);
-                this.autoResultsCount++;
-                document.getElementById('autoResultsCount').textContent = this.autoResultsCount;
-                
-                // Add to auto results list
-                this.addAutoResult(crashValue, isWin);
-                
-                // Log the processed result
-                const resultText = isWin ? 'WIN' : 'LOSS';
-                const logClass = isWin ? 'success' : 'error';
-                this.addWebSocketLog(`🎯 ${crashValue.toFixed(2)}x → ${resultText} (threshold: ${this.wsConfig.crashThreshold}x)`, logClass);
-            }
-
-            addAutoResult(crashValue, isWin) {
-                const resultsList = document.getElementById('autoResultsList');
-                
-                // Remove placeholder text
-                if (resultsList.innerHTML.includes('No auto results yet')) {
-                    resultsList.innerHTML = '';
-                }
-                
-                const resultItem = document.createElement('div');
-                resultItem.className = `auto-result-item ${isWin ? 'win' : 'loss'}`;
-                
-                const timestamp = new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                
-                resultItem.innerHTML = `
-                    <div>
-                        <div style="font-weight: 600;">${crashValue.toFixed(2)}x</div>
-                        <div style="font-size: 0.7rem; opacity: 0.7;">${timestamp}</div>
-                    </div>
-                    <div>
-                        <span style="background: ${isWin ? 'var(--accent-green)' : 'var(--accent-red)'}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; font-weight: 600;">
-                            ${isWin ? 'WIN' : 'LOSS'}
-                        </span>
-                    </div>
-                `;
-                
-                // Add to top of list
-                resultsList.insertBefore(resultItem, resultsList.firstChild);
-                
-                // Keep only last 20 results
-                while (resultsList.children.length > 20) {
-                    resultsList.removeChild(resultsList.lastChild);
+                } catch (error) {
+                    // Handle non-JSON frames
+                    this.log(`Non-JSON frame: "${frame}"`, 'warning');
                 }
             }
 
-            updateConnectionStatus(status, text) {
+            handleSignalRMessage(message) {
+                // Handle different SignalR message types
+                switch (message.type) {
+                    case 1: // Invocation
+                        this.handleInvocation(message);
+                        break;
+                    case 2: // StreamItem
+                        this.log('Stream item received', 'info');
+                        break;
+                    case 3: // Completion
+                        this.log('Completion message received', 'success');
+                        break;
+                    case 6: // Ping
+                        this.log('Ping received', 'info');
+                        break;
+                    case 7: // Close
+                        this.log('Close message received', 'warning');
+                        break;
+                    default:
+                        if (message.target) {
+                            this.handleInvocation(message);
+                        } else {
+                            this.log(`Unknown message type: ${message.type}`, 'warning');
+                        }
+                }
+            }
+
+            handleInvocation(message) {
+                const target = message.target;
+                const args = message.arguments || [];
+
+                this.log(`Invocation: ${target}`, 'success');
+
+                switch (target) {
+                    case 'OnCrash':
+                        this.handleOnCrash(args);
+                        break;
+                    case 'OnRegistration':
+                        this.handleOnRegistration(args);
+                        break;
+                    case 'OnBets':
+                        this.log('Betting data received', 'info');
+                        break;
+                    default:
+                        this.log(`Unknown target: ${target}`, 'info');
+                }
+            }
+
+            handleOnCrash(args) {
+                if (args.length > 0 && args[0].f !== undefined) {
+                    const crashValue = args[0].f;
+                    this.log(`CRASH VALUE: ${crashValue}`, 'crash');
+                    
+                    // Update display
+                    document.getElementById('lastCrashValue').textContent = crashValue.toFixed(2);
+                    
+                    // Add to history
+                    this.addToCrashHistory(crashValue);
+                } else {
+                    this.log('OnCrash received but no crash value found', 'warning');
+                }
+            }
+
+            handleOnRegistration(args) {
+                if (args.length > 0 && args[0].fs) {
+                    const historyValues = args[0].fs;
+                    this.log(`REGISTRATION HISTORY: ${historyValues.length} values`, 'history');
+                    
+                    historyValues.forEach((entry, index) => {
+                        if (entry.f !== undefined) {
+                            this.log(`History[${index}]: ${entry.f}`, 'history');
+                            this.addToCrashHistory(entry.f);
+                        }
+                    });
+                } else {
+                    this.log('OnRegistration received but no history found', 'warning');
+                }
+            }
+
+            addToCrashHistory(value) {
+                this.crashHistory.unshift(value);
+                
+                // Keep only last 20 values
+                if (this.crashHistory.length > 20) {
+                    this.crashHistory = this.crashHistory.slice(0, 20);
+                }
+                
+                this.updateCrashHistoryDisplay();
+            }
+
+            updateCrashHistoryDisplay() {
+                const container = document.getElementById('crashHistory');
+                
+                if (this.crashHistory.length === 0) {
+                    container.innerHTML = '<span style="color: #666; font-style: italic;">No crash values received yet</span>';
+                    return;
+                }
+                
+                container.innerHTML = this.crashHistory
+                    .map(value => `<span class="crash-value">${value.toFixed(2)}</span>`)
+                    .join('');
+            }
+
+            updateConnectionStatus(status) {
                 const indicator = document.getElementById('statusIndicator');
                 const statusText = document.getElementById('connectionStatus');
                 const connectBtn = document.getElementById('connectBtn');
-                
-                indicator.className = 'status-indicator';
+
+                indicator.className = `status-indicator ${status}`;
                 
                 switch (status) {
                     case 'connected':
-                        indicator.classList.add('connected');
                         statusText.textContent = 'Connected';
-                        statusText.style.color = 'var(--accent-green)';
-                        connectBtn.textContent = '🔌 Disconnect';
-                        connectBtn.className = 'websocket-btn connect-btn disconnect';
+                        connectBtn.textContent = 'Disconnect';
+                        connectBtn.className = 'connect-btn disconnect';
                         break;
-                        
                     case 'connecting':
-                        indicator.classList.add('connecting');
                         statusText.textContent = 'Connecting...';
-                        statusText.style.color = 'var(--accent-orange)';
-                        connectBtn.textContent = '⏳ Connecting...';
+                        connectBtn.textContent = 'Connecting...';
                         connectBtn.disabled = true;
                         break;
-                        
                     default:
                         statusText.textContent = 'Disconnected';
-                        statusText.style.color = 'var(--accent-red)';
-                        connectBtn.textContent = '🔗 Connect';
-                        connectBtn.className = 'websocket-btn connect-btn';
+                        connectBtn.textContent = 'Connect';
+                        connectBtn.className = 'connect-btn';
                         connectBtn.disabled = false;
                 }
             }
@@ -1486,7 +607,8 @@ parseJsonMessage(data) {
                         const elapsed = new Date() - this.connectionStartTime;
                         const minutes = Math.floor(elapsed / 60000);
                         const seconds = Math.floor((elapsed % 60000) / 1000);
-                        document.getElementById('connectionTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        document.getElementById('connectionTime').textContent = 
+                            `${minutes}:${seconds.toString().padStart(2, '0')}`;
                     }
                 }, 1000);
             }
@@ -1499,690 +621,81 @@ parseJsonMessage(data) {
                 }
             }
 
-            addWebSocketLog(message, type = 'info') {
-                const logsContainer = document.getElementById('websocketLogs');
-                const timestamp = new Date().toLocaleTimeString('en-US', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
+            log(message, type = 'info') {
+                const logContainer = document.getElementById('log');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${type}`;
                 
-                const logEntry = document.createElement('div');
-                logEntry.className = `log-entry ${type}`;
-                logEntry.innerHTML = `<span style="opacity: 0.6;">[${timestamp}]</span> ${message}`;
+                const timestamp = new Date().toLocaleTimeString();
+                entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
                 
-                logsContainer.appendChild(logEntry);
-                logsContainer.scrollTop = logsContainer.scrollHeight;
+                logContainer.appendChild(entry);
+                logContainer.scrollTop = logContainer.scrollHeight;
                 
-                // Keep only last 50 log entries
-                while (logsContainer.children.length > 50) {
-                    logsContainer.removeChild(logsContainer.firstChild);
+                // Keep only last 100 entries for performance
+                while (logContainer.children.length > 100) {
+                    logContainer.removeChild(logContainer.firstChild);
                 }
             }
 
-            clearWebSocketLogs() {
-                document.getElementById('websocketLogs').innerHTML = '<div style="opacity: 0.5;">Logs cleared...</div>';
-            }
-
-            testWebSocketConnection() {
-                const url = document.getElementById('wsUrl').value.trim();
-                if (!url) {
-                    this.addWebSocketLog('Please enter a WebSocket URL to test', 'error');
-                    return;
-                }
-
-                this.addWebSocketLog(`🧪 Testing connection to ${url}...`, 'info');
+            testWithSampleData() {
+                this.log('Testing with sample SignalR data...', 'info');
                 
-                try {
-                    const testSocket = new WebSocket(url);
-                    
-                    testSocket.onopen = () => {
-                        this.addWebSocketLog('✅ Test connection successful!', 'success');
-                        testSocket.close();
-                    };
-                    
-                    testSocket.onerror = () => {
-                        this.addWebSocketLog('❌ Test connection failed', 'error');
-                    };
-                    
-                    testSocket.onclose = (event) => {
-                        if (event.code !== 1000) {
-                            this.addWebSocketLog(`⚠️ Test connection closed with code: ${event.code}`, 'warning');
-                        }
-                    };
-                    
-                    // Close test connection after 5 seconds
+                // Sample frames as they would come from a real SignalR connection
+                const sampleFrames = [
+                    // Handshake response
+                    '{}',
+                    // OnRegistration with history
+                    '{"type":1,"target":"OnRegistration","arguments":[{"fs":[{"f":2.45},{"f":1.67},{"f":3.21},{"f":1.23},{"f":5.67}]}]}',
+                    // Individual crash events
+                    '{"type":1,"target":"OnCrash","arguments":[{"f":2.89}]}',
+                    '{"type":1,"target":"OnCrash","arguments":[{"f":1.45}]}',
+                    '{"type":1,"target":"OnCrash","arguments":[{"f":7.23}]}',
+                    // Ping
+                    '{"type":6}'
+                ];
+
+                let delay = 0;
+                sampleFrames.forEach((frame, index) => {
                     setTimeout(() => {
-                        if (testSocket.readyState === WebSocket.CONNECTING || testSocket.readyState === WebSocket.OPEN) {
-                            testSocket.close();
-                            this.addWebSocketLog('🕐 Test connection timeout', 'warning');
-                        }
-                    }, 5000);
-                    
-                } catch (error) {
-                    this.addWebSocketLog(`❌ Test failed: ${error.message}`, 'error');
-                }
-            }
-
-            loadSettings() {
-                try {
-                    const stored = localStorage.getItem('martingaleSettings');
-                    if (stored) {
-                        this.settings = { ...this.settings, ...JSON.parse(stored) };
-                    }
-                } catch (e) {
-                    console.log('Settings load error');
-                }
-            }
-
-            saveSettings() {
-                localStorage.setItem('martingaleSettings', JSON.stringify(this.settings));
-            }
-
-            initializeWeights() {
-                // Simple neural network weights for pattern recognition
-                return {
-                    sequence: Array.from({ length: 10 }, () => Math.random() - 0.5),
-                    trend: Array.from({ length: 5 }, () => Math.random() - 0.5),
-                    frequency: Array.from({ length: 3 }, () => Math.random() - 0.5),
-                    bias: Math.random() - 0.5
-                };
-            }
-
-            recordResult(isWin, updateStreak = true, crashValue = null) {
-                const timestamp = Date.now();
-                const result = {
-                    win: isWin,
-                    timestamp: timestamp,
-                    streak: this.currentStreak,
-                    crashValue: crashValue, // Store the actual crash value for reference
-                    source: crashValue ? 'websocket' : 'manual' // Track data source
-                };
-
-                this.results.push(result);
-                
-                if (updateStreak) {
-                    if (isWin) {
-                        this.currentStreak = 0;
-                    } else {
-                        this.currentStreak++;
-                        if (this.currentStreak > this.maxStreak) {
-                            this.maxStreak = this.currentStreak;
-                        }
-                    }
-                }
-
-                // Update neural network with new data
-                this.updateNeuralNetwork();
-                
-                this.saveData();
-                this.updateDisplay();
-                this.updateTimeAnalytics();
-                
-                // Trigger haptic feedback simulation
-                this.simulateHaptic(isWin);
-
-                // Check for streak alerts
-                this.checkStreakAlert();
-
-                // Keep only last 1000 results for performance
-                if (this.results.length > 1000) {
-                    this.results = this.results.slice(-1000);
-                }
-            }
-
-            updateNeuralNetwork() {
-                if (this.results.length < 10) return;
-
-                const recent = this.results.slice(-20);
-                const learningRate = 0.01;
-
-                // Pattern recognition learning
-                for (let i = 5; i < recent.length; i++) {
-                    const pattern = recent.slice(i-5, i).map(r => r.win ? 1 : 0);
-                    const actual = recent[i].win ? 1 : 0;
-                    const predicted = this.predictFromPattern(pattern);
-                    const error = actual - predicted;
-
-                    // Update weights based on error
-                    for (let j = 0; j < this.neuralWeights.sequence.length && j < pattern.length; j++) {
-                        this.neuralWeights.sequence[j] += learningRate * error * pattern[j];
-                    }
-                }
-            }
-
-            predictFromPattern(pattern) {
-                let sum = this.neuralWeights.bias;
-                
-                // Sequence analysis
-                for (let i = 0; i < pattern.length && i < this.neuralWeights.sequence.length; i++) {
-                    sum += pattern[i] * this.neuralWeights.sequence[i];
-                }
-
-                // Trend analysis
-                const trend = this.analyzeTrend(pattern);
-                for (let i = 0; i < trend.length && i < this.neuralWeights.trend.length; i++) {
-                    sum += trend[i] * this.neuralWeights.trend[i];
-                }
-
-                // Apply activation function (sigmoid)
-                return 1 / (1 + Math.exp(-sum));
-            }
-
-            analyzeTrend(pattern) {
-                const trends = [];
-                for (let i = 1; i < pattern.length; i++) {
-                    trends.push(pattern[i] - pattern[i-1]);
-                }
-                return trends;
-            }
-
-            getAIPrediction() {
-                if (this.results.length < 10) {
-                    return {
-                        prediction: 'LEARNING',
-                        confidence: 0,
-                        reasoning: 'Collecting data for pattern analysis'
-                    };
-                }
-
-                const recent = this.results.slice(-10).map(r => r.win ? 1 : 0);
-                const prediction = this.predictFromPattern(recent);
-                
-                // Additional pattern analysis
-                const lossStreak = this.getCurrentLossStreak();
-                const winRate = this.getWinRate();
-                
-                // Martingale logic integration
-                let finalPrediction;
-                let confidence;
-                let reasoning;
-
-                if (lossStreak >= 4) {
-                    finalPrediction = 'WIN LIKELY';
-                    confidence = Math.min(85, 60 + lossStreak * 5);
-                    reasoning = `${lossStreak} loss streak - probability favors win`;
-                } else if (prediction > 0.7) {
-                    finalPrediction = 'WIN';
-                    confidence = Math.round(prediction * 100);
-                    reasoning = 'Neural network detects win pattern';
-                } else if (prediction < 0.3) {
-                    finalPrediction = 'LOSS';
-                    confidence = Math.round((1 - prediction) * 100);
-                    reasoning = 'Pattern suggests loss incoming';
-                } else {
-                    finalPrediction = 'UNCERTAIN';
-                    confidence = 50;
-                    reasoning = 'Mixed signals in data';
-                }
-
-                // Adjust confidence based on settings
-                const sensitivityMultiplier = {
-                    'low': 0.7,
-                    'medium': 1.0,
-                    'high': 1.3
-                }[this.settings.aiSensitivity];
-
-                confidence = Math.min(95, Math.round(confidence * sensitivityMultiplier));
-
-                return {
-                    prediction: finalPrediction,
-                    confidence: confidence,
-                    reasoning: reasoning
-                };
-            }
-
-            getCurrentLossStreak() {
-                let streak = 0;
-                for (let i = this.results.length - 1; i >= 0; i--) {
-                    if (!this.results[i].win) {
-                        streak++;
-                    } else {
-                        break;
-                    }
-                }
-                return streak;
-            }
-
-            getWinRate() {
-                if (this.results.length === 0) return 0;
-                const wins = this.results.filter(r => r.win).length;
-                return Math.round((wins / this.results.length) * 100);
-            }
-
-            checkStreakAlert() {
-                const alert = document.getElementById('streakAlert');
-                if (this.currentStreak >= this.settings.maxStreakAlert) {
-                    alert.style.display = 'block';
-                } else {
-                    alert.style.display = 'none';
-                }
-            }
-
-            simulateHaptic(isWin) {
-                const body = document.body;
-                body.classList.add('vibrate');
-                setTimeout(() => body.classList.remove('vibrate'), 300);
-
-                // Try actual haptic feedback on supported devices
-                if (navigator.vibrate) {
-                    navigator.vibrate(isWin ? [100, 50, 100] : [200]);
-                }
-            }
-
-            updateDisplay() {
-                // AI Prediction
-                const prediction = this.getAIPrediction();
-                document.getElementById('aiPrediction').textContent = prediction.prediction;
-                document.getElementById('confidenceFill').style.width = `${prediction.confidence}%`;
-                document.getElementById('confidenceText').textContent = `${prediction.confidence}%`;
-                document.getElementById('patternInfo').textContent = prediction.reasoning;
-
-                // Color prediction based on type
-                const predElement = document.getElementById('aiPrediction');
-                if (prediction.prediction.includes('WIN')) {
-                    predElement.style.color = 'var(--accent-green)';
-                } else if (prediction.prediction.includes('LOSS')) {
-                    predElement.style.color = 'var(--accent-red)';
-                } else {
-                    predElement.style.color = 'var(--accent-purple)';
-                }
-
-                // Stats
-                document.getElementById('currentStreak').textContent = this.currentStreak;
-                document.getElementById('maxStreak').textContent = this.maxStreak;
-                document.getElementById('winRate').textContent = `${this.getWinRate()}%`;
-                document.getElementById('totalBets').textContent = this.results.length;
-
-                // Pattern Grid
-                this.updatePatternGrid();
-                this.updateHistory();
-            }
-
-            updatePatternGrid() {
-                const grid = document.getElementById('patternGrid');
-                const recent = this.results.slice(-20);
-                
-                grid.innerHTML = '';
-                
-                for (let i = 0; i < 20; i++) {
-                    const dot = document.createElement('div');
-                    dot.className = 'pattern-dot';
-                    
-                    if (i < recent.length) {
-                        const result = recent[i];
-                        dot.classList.add(result.win ? 'win' : 'loss');
-                        dot.textContent = result.win ? 'W' : 'L';
-                    } else {
-                        dot.style.background = 'rgba(255,255,255,0.1)';
-                        dot.textContent = '?';
-                    }
-                    
-                    grid.appendChild(dot);
-                }
-
-                // Add predicted next result
-                if (recent.length > 0) {
-                    const prediction = this.getAIPrediction();
-                    if (recent.length < 20) {
-                        const predictedDot = document.createElement('div');
-                        predictedDot.className = 'pattern-dot predicted';
-                        predictedDot.textContent = prediction.prediction.includes('WIN') ? 'W?' : 'L?';
-                        predictedDot.style.animation = 'pulse 2s infinite';
-                        grid.appendChild(predictedDot);
-                    }
-                }
-            }
-
-            updateHistory() {
-                const historyList = document.getElementById('historyList');
-                const recent = this.results.slice(-20).reverse();
-                
-                if (recent.length === 0) {
-                    historyList.innerHTML = '<div style="text-align: center; padding: 30px; opacity: 0.5;">No results recorded yet</div>';
-                    return;
-                }
-
-                historyList.innerHTML = recent.map((result, index) => {
-                    const date = new Date(result.timestamp);
-                    const timeStr = date.toLocaleTimeString('en-US', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                    
-                    // Show crash value if available and source indicator
-                    const crashInfo = result.crashValue ? `${result.crashValue.toFixed(2)}x` : '';
-                    const sourceIcon = result.source === 'websocket' ? '🔗' : '👤';
-                    
-                    return `
-                        <div class="history-item">
-                            <div>
-                                <div style="font-weight: 600;">${sourceIcon} #${this.results.length - index}</div>
-                                <div style="font-size: 0.7rem; opacity: 0.7;">${timeStr}</div>
-                                ${crashInfo ? `<div style="font-size: 0.7rem; opacity: 0.8; color: var(--accent-blue);">${crashInfo}</div>` : ''}
-                            </div>
-                            <div>
-                                <span class="history-result ${result.win ? 'win' : 'loss'}">
-                                    ${result.win ? 'WIN' : 'LOSS'}
-                                </span>
-                            </div>
-                            <div style="font-size: 0.8rem; opacity: 0.7;">
-                                Streak: ${result.streak}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Time Analytics Methods
-            updateTimeAnalytics() {
-                this.generateTimeAnalyticsTable();
-                this.updateAnalyticsSummary();
-            }
-
-            generateTimeAnalyticsTable() {
-                const tableBody = document.getElementById('timeAnalyticsTableBody');
-                const timeData = this.getTimeBasedData();
-                
-                let tableHTML = '';
-                
-                for (let hour = 0; hour < 24; hour++) {
-                    tableHTML += `<tr>`;
-                    tableHTML += `<td class="hour-cell">${hour.toString().padStart(2, '0')}:00</td>`;
-                    
-                    for (let day = 0; day < 7; day++) {
-                        const hourData = timeData[day] && timeData[day][hour];
-                        let cellContent = '';
-                        let cellClass = '';
-                        let safetyIndicator = '';
-                        
-                        if (hourData && hourData.totalBets >= 5) {
-                            const winRate = Math.round((hourData.wins / hourData.totalBets) * 100);
-                            cellContent = `${winRate}%`;
-                            
-                            // Determine cell color based on win rate
-                            if (winRate >= 60) {
-                                cellClass = 'win-rate-excellent';
-                            } else if (winRate >= 50) {
-                                cellClass = 'win-rate-good';
-                            } else if (winRate >= 40) {
-                                cellClass = 'win-rate-average';
-                            } else if (winRate >= 30) {
-                                cellClass = 'win-rate-poor';
-                            } else {
-                                cellClass = 'win-rate-dangerous';
-                            }
-                            
-                            // Determine safety for Martingale based on win rate and max loss streak
-                            const isSafeForMartingale = this.isSafeTimeForMartingale(winRate, hourData.maxLossStreak);
-                            if (isSafeForMartingale === 'safe') {
-                                safetyIndicator = '<div class="safety-indicator safety-safe"></div>';
-                            } else if (isSafeForMartingale === 'caution') {
-                                safetyIndicator = '<div class="safety-indicator safety-caution"></div>';
-                            } else {
-                                safetyIndicator = '<div class="safety-indicator safety-danger"></div>';
-                            }
-                        } else if (hourData && hourData.totalBets > 0) {
-                            cellContent = 'N/A';
-                            cellClass = '';
-                        } else {
-                            cellContent = '';
-                            cellClass = '';
-                        }
-                        
-                        tableHTML += `<td class="${cellClass}" style="position: relative;">${cellContent}${safetyIndicator}</td>`;
-                    }
-                    
-                    tableHTML += `</tr>`;
-                }
-                
-                tableBody.innerHTML = tableHTML;
-            }
-
-            getTimeBasedData() {
-                const timeData = Array.from({ length: 7 }, () => 
-                    Array.from({ length: 24 }, () => ({
-                        wins: 0,
-                        totalBets: 0,
-                        maxLossStreak: 0,
-                        currentLossStreak: 0
-                    }))
-                );
-                
-                this.results.forEach(result => {
-                    const date = new Date(result.timestamp);
-                    const day = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-                    const hour = date.getHours();
-                    
-                    timeData[day][hour].totalBets++;
-                    if (result.win) {
-                        timeData[day][hour].wins++;
-                        timeData[day][hour].currentLossStreak = 0;
-                    } else {
-                        timeData[day][hour].currentLossStreak++;
-                        timeData[day][hour].maxLossStreak = Math.max(
-                            timeData[day][hour].maxLossStreak,
-                            timeData[day][hour].currentLossStreak
-                        );
-                    }
+                        this.log(`Processing sample frame ${index + 1}/${sampleFrames.length}`, 'info');
+                        this.processFrame(frame);
+                    }, delay);
+                    delay += 500;
                 });
-                
-                return timeData;
             }
 
-            isSafeTimeForMartingale(winRate, maxLossStreak) {
-                // Martingale safety assessment based on win rate and historical max loss streaks
-                if (winRate >= 55 && maxLossStreak <= 4) {
-                    return 'safe';
-                } else if (winRate >= 48 && maxLossStreak <= 6) {
-                    return 'caution';
-                } else {
-                    return 'danger';
-                }
-            }
-
-            updateAnalyticsSummary() {
-                const timeData = this.getTimeBasedData();
-                let bestHour = null;
-                let bestWinRate = 0;
-                let worstHour = null;
-                let worstWinRate = 100;
-                let safeHoursCount = 0;
-                
-                for (let day = 0; day < 7; day++) {
-                    for (let hour = 0; hour < 24; hour++) {
-                        const hourData = timeData[day][hour];
-                        if (hourData.totalBets >= 5) {
-                            const winRate = (hourData.wins / hourData.totalBets) * 100;
-                            
-                            if (winRate > bestWinRate) {
-                                bestWinRate = winRate;
-                                bestHour = hour;
-                            }
-                            
-                            if (winRate < worstWinRate) {
-                                worstWinRate = winRate;
-                                worstHour = hour;
-                            }
-                            
-                            if (this.isSafeTimeForMartingale(winRate, hourData.maxLossStreak) === 'safe') {
-                                safeHoursCount++;
-                            }
-                        }
-                    }
-                }
-                
-                document.getElementById('bestTimeSlot').textContent = 
-                    bestHour !== null ? `${bestHour.toString().padStart(2, '0')}:00` : '--';
-                document.getElementById('worstTimeSlot').textContent = 
-                    worstHour !== null ? `${worstHour.toString().padStart(2, '0')}:00` : '--';
-                document.getElementById('safeHours').textContent = safeHoursCount.toString();
-            }
-
-            exportData() {
-                const data = {
-                    version: '1.0',
-                    exported: new Date().toISOString(),
-                    results: this.results,
-                    stats: {
-                        totalBets: this.results.length,
-                        winRate: this.getWinRate(),
-                        maxStreak: this.maxStreak,
-                        currentStreak: this.currentStreak
-                    },
-                    neuralWeights: this.neuralWeights,
-                    settings: this.settings,
-                    timeAnalytics: this.getTimeBasedData()
-                };
-
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `martingale_ai_data_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            reset() {
-                this.results = [];
-                this.currentStreak = 0;
-                this.maxStreak = 0;
-                this.neuralWeights = this.initializeWeights();
-                this.saveData();
-                this.updateDisplay();
-                this.updateTimeAnalytics();
-            }
-
-            resetStreak() {
-                this.currentStreak = 0;
-                this.updateDisplay();
-                this.checkStreakAlert();
+            clearLog() {
+                document.getElementById('log').innerHTML = '';
+                this.log('Log cleared', 'info');
             }
         }
 
         // Global instance
-        let martingaleAI;
+        let demo;
 
-        // Initialize app
+        // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            martingaleAI = new MartingaleAI();
-            
-            // Add some CSS animations
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50% { opacity: 0.7; transform: scale(1.1); }
-                }
-            `;
-            document.head.appendChild(style);
+            demo = new SignalRWebSocketDemo();
         });
 
-        // Tab switching functionality
-        function switchTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Show selected tab content
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            // Add active class to clicked tab
-            event.target.classList.add('active');
-            
-            // Update analytics when switching to analytics tab
-            if (tabName === 'analytics') {
-                martingaleAI.updateTimeAnalytics();
-            }
-        }
-
-        // Main functions
-        function recordResult(isWin) {
-            martingaleAI.recordResult(isWin);
-        }
-
-        function resetStreak() {
-            if (confirm('Reset current loss streak counter?')) {
-                martingaleAI.resetStreak();
-            }
-        }
-
-        function exportData() {
-            martingaleAI.exportData();
-        }
-
-        function clearAll() {
-            if (confirm('Clear all data? This cannot be undone.')) {
-                martingaleAI.reset();
-            }
-        }
-
-        function showSettings() {
-            document.getElementById('settingsModal').style.display = 'block';
-            document.getElementById('maxStreakAlert').value = martingaleAI.settings.maxStreakAlert;
-            document.getElementById('aiSensitivity').value = martingaleAI.settings.aiSensitivity;
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function saveSettings() {
-            martingaleAI.settings.maxStreakAlert = parseInt(document.getElementById('maxStreakAlert').value);
-            martingaleAI.settings.aiSensitivity = document.getElementById('aiSensitivity').value;
-            martingaleAI.saveSettings();
-            martingaleAI.checkStreakAlert();
-            closeSettings();
-        }
-
-        // WebSocket functions
-        function toggleWebSocket() {
-            if (martingaleAI.websocket && martingaleAI.websocket.readyState === WebSocket.OPEN) {
-                martingaleAI.disconnectWebSocket();
+        // Connection toggle function
+        function toggleConnection() {
+            if (demo.websocket && demo.websocket.readyState === WebSocket.OPEN) {
+                demo.disconnect();
             } else {
-                martingaleAI.connectWebSocket();
+                demo.connect();
             }
         }
 
-        function testConnection() {
-            martingaleAI.testWebSocketConnection();
+        // Test function
+        function testWithSampleData() {
+            demo.testWithSampleData();
         }
 
-        function clearWebSocketLogs() {
-            martingaleAI.clearWebSocketLogs();
-        }
-        document.addEventListener('keydown', function(event) {
-            if (event.key === '1' || event.key === 'w' || event.key === 'W') {
-                recordResult(true);
-            } else if (event.key === '0' || event.key === 'l' || event.key === 'L') {
-                recordResult(false);
-            }
-        });
-
-        // Touch event optimization for mobile
-        document.addEventListener('touchstart', function() {}, { passive: true });
-        document.addEventListener('touchmove', function() {}, { passive: true });
-
-        // Prevent context menu on long press for better mobile experience
-        document.addEventListener('contextmenu', function(event) {
-            event.preventDefault();
-        });
-
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('settingsModal');
-            if (event.target === modal) {
-                closeSettings();
-            }
+        // Clear log function
+        function clearLog() {
+            demo.clearLog();
         }
     </script>
 </body>
