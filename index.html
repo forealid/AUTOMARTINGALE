@@ -3,347 +3,851 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignalR WebSocket Protocol Demo</title>
+    <title>SignalR Analytics Dashboard</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #1a1a1a;
-            color: #ffffff;
+        :root {
+            --primary-bg: #0a0b0f;
+            --secondary-bg: #1a1d24;
+            --card-bg: #252832;
+            --accent-green: #00ff88;
+            --accent-blue: #0099ff;
+            --accent-orange: #ff6b35;
+            --accent-red: #ff3366;
+            --text-primary: #ffffff;
+            --text-secondary: #8892b0;
+            --text-muted: #495670;
+            --border-color: #2d3142;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 4px 32px rgba(0, 0, 0, 0.3);
+            --glow: 0 0 20px rgba(0, 255, 136, 0.15);
+        }
+
+        * {
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 1200px;
+        .dashboard {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary-bg), var(--card-bg));
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .header-content {
+            max-width: 1600px;
             margin: 0 auto;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            gap: 2rem;
         }
 
-        h1 {
-            text-align: center;
-            color: #4CAF50;
-            margin-bottom: 30px;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .connection-panel {
-            background: #2d2d2d;
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: var(--primary-bg);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            color: var(--text-primary);
+            box-shadow: var(--glow);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: var(--success);
+        }
+
+        .status-dot.connecting {
+            background: var(--warning);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            gap: 2rem;
+        }
+
+        /* Card System */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        /* Connection Tab */
+        .connection-grid {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr 1fr;
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
         }
 
-        label {
+        .input-label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #ccc;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
         }
 
-        input {
+        .input-field {
             width: 100%;
-            padding: 10px;
-            background: #1a1a1a;
-            border: 1px solid #555;
-            border-radius: 4px;
-            color: #fff;
-            font-size: 14px;
+            padding: 1rem;
+            background: var(--secondary-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
 
-        input::placeholder {
-            color: #888;
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+        }
+
+        .button {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .button:hover:before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+            color: white;
+            box-shadow: 0 4px 16px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-red), #dc2626);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 51, 102, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--accent-blue), #1e40af);
+            color: white;
+            box-shadow: 0 4px 16px rgba(0, 153, 255, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--accent-orange), #ea580c);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
         }
 
         .button-group {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            gap: 1rem;
+            margin-top: 1.5rem;
         }
 
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.3s;
-        }
-
-        .connect-btn {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .connect-btn:hover {
-            background: #45a049;
-        }
-
-        .connect-btn.disconnect {
-            background: #f44336;
-        }
-
-        .connect-btn.disconnect:hover {
-            background: #da190b;
-        }
-
-        .test-btn {
-            background: #2196F3;
-            color: white;
-        }
-
-        .test-btn:hover {
-            background: #0b7dda;
-        }
-
-        .clear-btn {
-            background: #ff9800;
-            color: white;
-        }
-
-        .clear-btn:hover {
-            background: #e68900;
-        }
-
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #f44336;
-        }
-
-        .status-indicator.connected {
-            background: #4CAF50;
-        }
-
-        .status-indicator.connecting {
-            background: #ff9800;
-        }
-
-        .data-panel {
-            background: #2d2d2d;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #444;
-        }
-
-        .stats {
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .stat-item {
-            background: #1a1a1a;
-            padding: 15px;
-            border-radius: 6px;
+        .stat-card {
+            background: linear-gradient(135deg, var(--secondary-bg), var(--card-bg));
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
             text-align: center;
-            border: 1px solid #555;
+            transition: all 0.3s ease;
         }
 
-        .stat-label {
-            font-size: 12px;
-            color: #888;
-            text-transform: uppercase;
-            margin-bottom: 5px;
+        .stat-card:hover {
+            transform: scale(1.02);
+            border-color: var(--accent-green);
+            box-shadow: var(--glow);
         }
 
         .stat-value {
-            font-size: 18px;
-            font-weight: 600;
-            color: #4CAF50;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 0.5rem;
         }
 
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Crash History */
         .crash-history {
-            margin-bottom: 20px;
-        }
-
-        .crash-values {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
+            gap: 0.75rem;
+            margin-top: 1rem;
         }
 
         .crash-value {
-            background: #4CAF50;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
             font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
 
+        .crash-value.win {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .crash-value.loss {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        }
+
+        .crash-value:hover {
+            transform: scale(1.05);
+        }
+
+        /* Statistics Table */
+        .table-container {
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            background: var(--card-bg);
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent-green);
+            border-bottom: 2px solid var(--accent-green);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table td {
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .table .time-cell {
+            background: var(--card-bg);
+            font-weight: 600;
+            color: var(--text-primary);
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            border-right: 2px solid var(--accent-green);
+        }
+
+        .cell-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .win-rate {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .win-rate.high { color: var(--success); }
+        .win-rate.medium { color: var(--warning); }
+        .win-rate.low { color: var(--danger); }
+
+        .loss-streak {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: var(--primary-bg);
+            padding: 0.125rem 0.5rem;
+            border-radius: 12px;
+        }
+
+        .martingale-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-top: 0.25rem;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .martingale-safe { background: var(--success); color: var(--success); }
+        .martingale-risky { background: var(--warning); color: var(--warning); }
+        .martingale-dangerous { background: var(--danger); color: var(--danger); }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, var(--secondary-bg), var(--card-bg));
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .summary-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--accent-green);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .summary-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 0.25rem;
+        }
+
+        /* Log */
         .log-container {
-            background: #1a1a1a;
-            border: 1px solid #555;
+            background: var(--primary-bg);
             border-radius: 8px;
             height: 400px;
             overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
         }
 
         .log-entry {
-            padding: 8px 12px;
-            border-bottom: 1px solid #333;
-            word-wrap: break-word;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            white-space: pre-wrap;
         }
 
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        .log-entry.info {
-            color: #2196F3;
-        }
-
-        .log-entry.success {
-            color: #4CAF50;
-        }
-
-        .log-entry.warning {
-            color: #ff9800;
-        }
-
-        .log-entry.error {
-            color: #f44336;
-        }
-
-        .log-entry.crash {
-            color: #4CAF50;
-            background: rgba(76, 175, 80, 0.1);
+        .log-entry.info { color: var(--accent-blue); }
+        .log-entry.success { color: var(--success); }
+        .log-entry.warning { color: var(--warning); }
+        .log-entry.error { color: var(--danger); }
+        .log-entry.crash { 
+            background: rgba(0, 255, 136, 0.05);
+            color: var(--accent-green);
             font-weight: 600;
         }
 
-        .log-entry.history {
-            color: #9C27B0;
-            background: rgba(156, 39, 176, 0.1);
-        }
-
         .timestamp {
-            color: #666;
-            font-size: 11px;
+            color: var(--text-muted);
+            margin-right: 0.5rem;
         }
 
-        .educational-note {
-            background: #2d2d2d;
-            border-left: 4px solid #2196F3;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 0 8px 8px 0;
+        /* Tab Content */
+        .tab-content {
+            display: none;
         }
 
-        .educational-note h3 {
-            margin: 0 0 10px 0;
-            color: #2196F3;
+        .tab-content.active {
+            display: block;
         }
 
-        .frame-structure {
-            background: #1a1a1a;
-            padding: 10px;
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .connection-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .legend {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .table-container {
+                overflow-x: auto;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--primary-bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
             border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            margin-top: 10px;
-            border: 1px solid #555;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>SignalR WebSocket Protocol Demo</h1>
-        
-        <div class="educational-note">
-            <h3>Educational Purpose</h3>
-            <p>This demo demonstrates how SignalR protocol works over WebSockets, including:</p>
-            <ul>
-                <li>Frame separation using \u001e delimiter</li>
-                <li>JSON message parsing and structure</li>
-                <li>Protocol handshake and hub invocations</li>
-                <li>Message type handling (OnCrash, OnRegistration, etc.)</li>
-            </ul>
-            <div class="frame-structure">
-                SignalR Frame Structure:<br>
-                {"protocol":"json","version":1}\u001e (handshake)<br>
-                {"arguments":[...],"invocationId":"1","target":"Hub","type":1}\u001e (invoke)<br>
-                {"type":1,"target":"OnCrash","arguments":[{"f":2.45}]}\u001e (server message)
+    <div class="dashboard">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">⚡</div>
+                    <div class="logo-text">SignalR Analytics</div>
+                </div>
+                
+                <nav class="nav-tabs">
+                    <button class="nav-tab active" onclick="switchTab('connection')">Connection</button>
+                    <button class="nav-tab" onclick="switchTab('statistics')">Statistics</button>
+                </nav>
+                
+                <div class="connection-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
             </div>
-        </div>
+        </header>
 
-        <div class="connection-panel">
-            <h3>Connection Settings</h3>
-            <div class="status">
-                <div class="status-indicator" id="statusIndicator"></div>
-                <span id="connectionStatus">Disconnected</span>
-            </div>
-            
-            <div class="input-group">
-                <label for="wsUrl">WebSocket URL:</label>
-                <input type="text" id="wsUrl" placeholder="wss://example.com/socket" value="">
-            </div>
-            
-            <div class="input-group">
-                <label for="accountId">Account ID (for hub invocation):</label>
-                <input type="text" id="accountId" placeholder="123456789" value="">
-            </div>
-            
-            <div class="button-group">
-                <button id="connectBtn" class="connect-btn" onclick="toggleConnection()">Connect</button>
-                <button class="test-btn" onclick="testWithSampleData()">Test with Sample Data</button>
-                <button class="clear-btn" onclick="clearLog()">Clear Log</button>
-            </div>
-        </div>
+        <main class="main-content">
+            <!-- Connection Tab -->
+            <div id="connectionTab" class="tab-content active">
+                <div class="connection-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🔗 Connection Settings</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <label class="input-label">WebSocket URL</label>
+                                <input type="text" id="wsUrl" class="input-field" 
+                                       placeholder="wss://example.com/socket">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label class="input-label">Account ID</label>
+                                <input type="text" id="accountId" class="input-field" 
+                                       placeholder="123456789">
+                            </div>
+                            
+                            <div class="button-group">
+                                <button id="connectBtn" class="button btn-primary" onclick="toggleConnection()">
+                                    Connect
+                                </button>
+                                <button class="button btn-secondary" onclick="testWithSampleData()">
+                                    Test Sample Data
+                                </button>
+                                <button class="button btn-warning" onclick="clearLog()">
+                                    Clear Log
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="data-panel">
-            <h3>Live Data</h3>
-            <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-label">Messages Received</div>
-                    <div class="stat-value" id="messagesReceived">0</div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 Live Metrics</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-value" id="messagesReceived">0</div>
+                                    <div class="stat-label">Messages</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="lastCrashValue">--</div>
+                                    <div class="stat-label">Last Crash</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="connectionTime">--</div>
+                                    <div class="stat-label">Uptime</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="sessionWinRate">--</div>
+                                    <div class="stat-label">Session Win Rate</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="currentStreak">--</div>
+                                    <div class="stat-label">Current Streak</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-value" id="framesProcessed">0</div>
+                                    <div class="stat-label">Frames</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">Last Crash Value</div>
-                    <div class="stat-value" id="lastCrashValue">--</div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🎯 Recent Crash History</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="crash-history" id="crashHistory">
+                            <span style="color: var(--text-muted);">No crash data yet</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">Connection Time</div>
-                    <div class="stat-value" id="connectionTime">--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Frames Processed</div>
-                    <div class="stat-value" id="framesProcessed">0</div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📝 Protocol Log</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="log-container" id="log"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="crash-history">
-                <h4>Recent Crash History:</h4>
-                <div class="crash-values" id="crashHistory">
-                    <span style="color: #666; font-style: italic;">No crash values received yet</span>
+            <!-- Statistics Tab -->
+            <div id="statisticsTab" class="tab-content">
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4 class="summary-title">🏆 Performance Overview</h4>
+                        <div class="summary-stats">
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="totalCrashes">0</div>
+                                <div class="summary-stat-label">Total Crashes</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="overallWinRate">--</div>
+                                <div class="summary-stat-label">Win Rate</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="bestHour">--</div>
+                                <div class="summary-stat-label">Best Hour</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="worstHour">--</div>
+                                <div class="summary-stat-label">Worst Hour</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h4 class="summary-title">⚠️ Risk Analysis</h4>
+                        <div class="summary-stats">
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="maxLossStreak">0</div>
+                                <div class="summary-stat-label">Max Loss Streak</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="safeHours">--</div>
+                                <div class="summary-stat-label">Safe Hours</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="riskyHours">--</div>
+                                <div class="summary-stat-label">Risky Hours</div>
+                            </div>
+                            <div class="summary-stat">
+                                <div class="summary-stat-value" id="dangerousHours">--</div>
+                                <div class="summary-stat-label">Dangerous Hours</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="controls">
+                            <div>
+                                <label>View: </label>
+                                <select id="viewMode" class="filter-select" onchange="updateStatsTable()">
+                                    <option value="week">This Week</option>
+                                    <option value="month">This Month</option>
+                                    <option value="all">All Time</option>
+                                </select>
+                            </div>
+                            
+                            <div class="button-group">
+                                <button class="button btn-secondary" onclick="generateSampleStats()">
+                                    Generate Sample
+                                </button>
+                                <button class="button btn-warning" onclick="clearStatistics()">
+                                    Clear Stats
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="legend">
+                            <div class="legend-item">
+                                <div class="legend-dot martingale-safe"></div>
+                                <span>Safe (≥65% WR, ≤4 Loss)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot martingale-risky"></div>
+                                <span>Risky (50-64% WR, 5-7 Loss)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-dot martingale-dangerous"></div>
+                                <span>Dangerous (<50% WR, ≥8 Loss)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th class="time-cell">Time</th>
+                                        <th>Sun</th>
+                                        <th>Mon</th>
+                                        <th>Tue</th>
+                                        <th>Wed</th>
+                                        <th>Thu</th>
+                                        <th>Fri</th>
+                                        <th>Sat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="data-panel">
-            <h3>Protocol Log</h3>
-            <div class="log-container" id="log"></div>
-        </div>
+        </main>
     </div>
 
     <script>
-        class SignalRWebSocketDemo {
+        class SignalRAnalytics {
             constructor() {
                 this.websocket = null;
                 this.messagesReceived = 0;
@@ -351,8 +855,253 @@
                 this.connectionStartTime = null;
                 this.connectionTimeInterval = null;
                 this.crashHistory = [];
+                this.sessionCrashes = [];
+                this.currentStreak = 0;
+                this.streakType = 'none';
                 
-                this.log('Demo initialized - Ready to connect', 'info');
+                this.statistics = this.loadStatistics();
+                
+                this.init();
+            }
+
+            init() {
+                this.log('SignalR Analytics initialized', 'success');
+                this.updateStatsTable();
+                this.updateSummaryCards();
+            }
+
+            loadStatistics() {
+                try {
+                    const saved = localStorage.getItem('signalr_statistics');
+                    return saved ? JSON.parse(saved) : {};
+                } catch (error) {
+                    console.error('Failed to load statistics:', error);
+                    return {};
+                }
+            }
+
+            saveStatistics() {
+                try {
+                    localStorage.setItem('signalr_statistics', JSON.stringify(this.statistics));
+                } catch (error) {
+                    console.error('Failed to save statistics:', error);
+                }
+            }
+
+            getTimeKey() {
+                const now = new Date();
+                return {
+                    day: now.getDay(),
+                    hour: now.getHours(),
+                    date: now.toDateString()
+                };
+            }
+
+            recordCrash(value) {
+                const { day, hour, date } = this.getTimeKey();
+                const key = `${date}_${hour}`;
+                
+                if (!this.statistics[key]) {
+                    this.statistics[key] = {
+                        day, hour, date,
+                        crashes: [],
+                        wins: 0,
+                        losses: 0,
+                        maxLossStreak: 0,
+                        currentLossStreak: 0
+                    };
+                }
+
+                const stats = this.statistics[key];
+                const isWin = value >= 2.0;
+                
+                stats.crashes.push({ value, timestamp: Date.now(), win: isWin });
+                
+                if (isWin) {
+                    stats.wins++;
+                    stats.currentLossStreak = 0;
+                } else {
+                    stats.losses++;
+                    stats.currentLossStreak++;
+                    stats.maxLossStreak = Math.max(stats.maxLossStreak, stats.currentLossStreak);
+                }
+
+                this.saveStatistics();
+                this.updateStatsTable();
+                this.updateSummaryCards();
+            }
+
+            getMartingaleSafety(winRate, maxLossStreak) {
+                if (winRate >= 65 && maxLossStreak <= 4) return 'safe';
+                if (winRate >= 50 && maxLossStreak <= 7) return 'risky';
+                return 'dangerous';
+            }
+
+            updateStatsTable() {
+                const tbody = document.getElementById('statsTableBody');
+                const viewMode = document.getElementById('viewMode').value;
+                
+                tbody.innerHTML = '';
+
+                for (let hour = 0; hour < 24; hour++) {
+                    const row = document.createElement('tr');
+                    
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'time-cell';
+                    timeCell.textContent = `${hour.toString().padStart(2, '0')}:00`;
+                    row.appendChild(timeCell);
+
+                    for (let day = 0; day < 7; day++) {
+                        const cell = document.createElement('td');
+                        const cellContent = document.createElement('div');
+                        cellContent.className = 'cell-content';
+
+                        const dayStats = this.getStatsForDayHour(day, hour, viewMode);
+                        
+                        if (dayStats.totalCrashes > 0) {
+                            const winRate = Math.round((dayStats.wins / dayStats.totalCrashes) * 100);
+                            const maxLossStreak = dayStats.maxLossStreak;
+                            
+                            const winRateSpan = document.createElement('span');
+                            winRateSpan.className = `win-rate ${this.getWinRateClass(winRate)}`;
+                            winRateSpan.textContent = `${winRate}%`;
+                            
+                            const lossStreakSpan = document.createElement('span');
+                            lossStreakSpan.className = 'loss-streak';
+                            lossStreakSpan.textContent = `L${maxLossStreak}`;
+                            
+                            const indicator = document.createElement('div');
+                            indicator.className = `martingale-indicator martingale-${this.getMartingaleSafety(winRate, maxLossStreak)}`;
+                            
+                            cellContent.appendChild(winRateSpan);
+                            cellContent.appendChild(lossStreakSpan);
+                            cellContent.appendChild(indicator);
+                        } else {
+                            const naSpan = document.createElement('span');
+                            naSpan.textContent = 'N/A';
+                            naSpan.style.color = 'var(--text-muted)';
+                            cellContent.appendChild(naSpan);
+                        }
+
+                        cell.appendChild(cellContent);
+                        row.appendChild(cell);
+                    }
+
+                    tbody.appendChild(row);
+                }
+            }
+
+            getStatsForDayHour(day, hour, viewMode) {
+                const result = { totalCrashes: 0, wins: 0, maxLossStreak: 0 };
+                const cutoffDate = this.getCutoffDate(viewMode);
+
+                Object.values(this.statistics).forEach(stats => {
+                    if (stats.day === day && stats.hour === hour) {
+                        const statsDate = new Date(stats.date);
+                        if (statsDate >= cutoffDate) {
+                            result.totalCrashes += stats.crashes.length;
+                            result.wins += stats.wins;
+                            result.maxLossStreak = Math.max(result.maxLossStreak, stats.maxLossStreak);
+                        }
+                    }
+                });
+
+                return result;
+            }
+
+            getCutoffDate(viewMode) {
+                const now = new Date();
+                switch (viewMode) {
+                    case 'week':
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        weekStart.setHours(0, 0, 0, 0);
+                        return weekStart;
+                    case 'month':
+                        return new Date(now.getFullYear(), now.getMonth(), 1);
+                    default:
+                        return new Date(0);
+                }
+            }
+
+            getWinRateClass(winRate) {
+                if (winRate >= 65) return 'high';
+                if (winRate >= 50) return 'medium';
+                return 'low';
+            }
+
+            updateSummaryCards() {
+                const stats = this.calculateOverallStats();
+                
+                document.getElementById('totalCrashes').textContent = stats.totalCrashes;
+                document.getElementById('overallWinRate').textContent = 
+                    stats.totalCrashes > 0 ? `${Math.round(stats.overallWinRate)}%` : '--';
+                document.getElementById('bestHour').textContent = stats.bestHour;
+                document.getElementById('worstHour').textContent = stats.worstHour;
+                document.getElementById('maxLossStreak').textContent = stats.maxLossStreak;
+                document.getElementById('safeHours').textContent = stats.safeHours;
+                document.getElementById('riskyHours').textContent = stats.riskyHours;
+                document.getElementById('dangerousHours').textContent = stats.dangerousHours;
+            }
+
+            calculateOverallStats() {
+                let totalCrashes = 0;
+                let totalWins = 0;
+                let maxLossStreak = 0;
+                let bestHour = { hour: '--', winRate: 0 };
+                let worstHour = { hour: '--', winRate: 100 };
+                let safeHours = 0;
+                let riskyHours = 0;
+                let dangerousHours = 0;
+
+                const hourStats = {};
+                
+                Object.values(this.statistics).forEach(stats => {
+                    totalCrashes += stats.crashes.length;
+                    totalWins += stats.wins;
+                    maxLossStreak = Math.max(maxLossStreak, stats.maxLossStreak);
+
+                    const hour = stats.hour;
+                    if (!hourStats[hour]) {
+                        hourStats[hour] = { crashes: 0, wins: 0, maxLoss: 0 };
+                    }
+                    
+                    hourStats[hour].crashes += stats.crashes.length;
+                    hourStats[hour].wins += stats.wins;
+                    hourStats[hour].maxLoss = Math.max(hourStats[hour].maxLoss, stats.maxLossStreak);
+                });
+
+                Object.entries(hourStats).forEach(([hour, stats]) => {
+                    if (stats.crashes > 0) {
+                        const winRate = (stats.wins / stats.crashes) * 100;
+                        const hourStr = `${hour.padStart(2, '0')}:00`;
+                        
+                        if (winRate > bestHour.winRate) {
+                            bestHour = { hour: hourStr, winRate };
+                        }
+                        if (winRate < worstHour.winRate) {
+                            worstHour = { hour: hourStr, winRate };
+                        }
+
+                        const safety = this.getMartingaleSafety(winRate, stats.maxLoss);
+                        switch (safety) {
+                            case 'safe': safeHours++; break;
+                            case 'risky': riskyHours++; break;
+                            case 'dangerous': dangerousHours++; break;
+                        }
+                    }
+                });
+
+                return {
+                    totalCrashes,
+                    overallWinRate: totalCrashes > 0 ? (totalWins / totalCrashes) * 100 : 0,
+                    maxLossStreak,
+                    bestHour: bestHour.hour,
+                    worstHour: worstHour.hour,
+                    safeHours,
+                    riskyHours,
+                    dangerousHours
+                };
             }
 
             connect() {
@@ -375,31 +1124,22 @@
                         this.updateConnectionStatus('connected');
                         this.log('WebSocket connected successfully', 'success');
                         this.startConnectionTimer();
-
-                        // Send SignalR handshake
                         this.sendHandshake();
-                        
-                        // Send account subscription if account ID provided
                         if (accountId) {
                             setTimeout(() => this.sendAccountSubscription(accountId), 100);
                         }
                     };
 
-                    this.websocket.onmessage = (event) => {
-                        this.handleMessage(event.data);
-                    };
-
+                    this.websocket.onmessage = (event) => this.handleMessage(event.data);
                     this.websocket.onclose = (event) => {
                         this.updateConnectionStatus('disconnected');
                         this.log(`Connection closed (Code: ${event.code})`, 'warning');
                         this.stopConnectionTimer();
                     };
-
-                    this.websocket.onerror = (error) => {
+                    this.websocket.onerror = () => {
                         this.log('WebSocket error occurred', 'error');
                         this.updateConnectionStatus('disconnected');
                     };
-
                 } catch (error) {
                     this.log(`Failed to connect: ${error.message}`, 'error');
                     this.updateConnectionStatus('disconnected');
@@ -438,14 +1178,10 @@
                 this.messagesReceived++;
                 document.getElementById('messagesReceived').textContent = this.messagesReceived;
 
-                // Split frames by \u001e delimiter
                 const frames = data.split("\u001e").filter(f => f.trim().length > 0);
-                
-                this.log(`Received ${frames.length} frame(s) in message`, 'info');
+                this.log(`Received ${frames.length} frame(s)`, 'info');
 
-                for (const frame of frames) {
-                    this.processFrame(frame);
-                }
+                frames.forEach(frame => this.processFrame(frame));
             }
 
             processFrame(frame) {
@@ -453,49 +1189,26 @@
                 document.getElementById('framesProcessed').textContent = this.framesProcessed;
 
                 try {
-                    // Handle empty frames (common with SignalR)
                     if (!frame.trim()) {
                         this.log('Empty frame (keepalive)', 'info');
                         return;
                     }
 
-                    // Try to parse as JSON
                     const message = JSON.parse(frame);
-                    this.log(`Frame parsed: ${JSON.stringify(message)}`, 'info');
-
-                    // Handle different message types
+                    this.log(`Frame: ${JSON.stringify(message)}`, 'info');
                     this.handleSignalRMessage(message);
-
                 } catch (error) {
-                    // Handle non-JSON frames
                     this.log(`Non-JSON frame: "${frame}"`, 'warning');
                 }
             }
 
             handleSignalRMessage(message) {
-                // Handle different SignalR message types
                 switch (message.type) {
-                    case 1: // Invocation
-                        this.handleInvocation(message);
-                        break;
-                    case 2: // StreamItem
-                        this.log('Stream item received', 'info');
-                        break;
-                    case 3: // Completion
-                        this.log('Completion message received', 'success');
-                        break;
-                    case 6: // Ping
-                        this.log('Ping received', 'info');
-                        break;
-                    case 7: // Close
-                        this.log('Close message received', 'warning');
-                        break;
+                    case 1: this.handleInvocation(message); break;
+                    case 6: this.log('Ping received', 'info'); break;
                     default:
-                        if (message.target) {
-                            this.handleInvocation(message);
-                        } else {
-                            this.log(`Unknown message type: ${message.type}`, 'warning');
-                        }
+                        if (message.target) this.handleInvocation(message);
+                        else this.log(`Unknown message type: ${message.type}`, 'warning');
                 }
             }
 
@@ -506,59 +1219,78 @@
                 this.log(`Invocation: ${target}`, 'success');
 
                 switch (target) {
-                    case 'OnCrash':
-                        this.handleOnCrash(args);
-                        break;
-                    case 'OnRegistration':
-                        this.handleOnRegistration(args);
-                        break;
-                    case 'OnBets':
-                        this.log('Betting data received', 'info');
-                        break;
-                    default:
-                        this.log(`Unknown target: ${target}`, 'info');
+                    case 'OnCrash': this.handleOnCrash(args); break;
+                    case 'OnRegistration': this.handleOnRegistration(args); break;
+                    default: this.log(`Unknown target: ${target}`, 'info');
                 }
             }
 
             handleOnCrash(args) {
                 if (args.length > 0 && args[0].f !== undefined) {
                     const crashValue = args[0].f;
-                    this.log(`CRASH VALUE: ${crashValue}`, 'crash');
+                    const isWin = crashValue >= 2.0;
                     
-                    // Update display
+                    this.log(`CRASH: ${crashValue} ${isWin ? '(WIN)' : '(LOSS)'}`, 'crash');
+                    
                     document.getElementById('lastCrashValue').textContent = crashValue.toFixed(2);
-                    
-                    // Add to history
                     this.addToCrashHistory(crashValue);
-                } else {
-                    this.log('OnCrash received but no crash value found', 'warning');
+                    this.recordCrash(crashValue);
+                    this.updateSessionStats(crashValue);
                 }
             }
 
             handleOnRegistration(args) {
                 if (args.length > 0 && args[0].fs) {
                     const historyValues = args[0].fs;
-                    this.log(`REGISTRATION HISTORY: ${historyValues.length} values`, 'history');
+                    this.log(`Registration history: ${historyValues.length} values`, 'success');
                     
                     historyValues.forEach((entry, index) => {
                         if (entry.f !== undefined) {
-                            this.log(`History[${index}]: ${entry.f}`, 'history');
+                            const isWin = entry.f >= 2.0;
+                            this.log(`History[${index}]: ${entry.f} ${isWin ? '(WIN)' : '(LOSS)'}`, 'info');
                             this.addToCrashHistory(entry.f);
+                            this.recordCrash(entry.f);
                         }
                     });
+                    this.updateSessionStats();
+                }
+            }
+
+            updateSessionStats(newValue = null) {
+                if (newValue !== null) {
+                    const isWin = newValue >= 2.0;
+                    this.sessionCrashes.push({ value: newValue, win: isWin });
+                    
+                    if (isWin) {
+                        if (this.streakType === 'win') this.currentStreak++;
+                        else { this.currentStreak = 1; this.streakType = 'win'; }
+                    } else {
+                        if (this.streakType === 'loss') this.currentStreak++;
+                        else { this.currentStreak = 1; this.streakType = 'loss'; }
+                    }
+                }
+
+                if (this.sessionCrashes.length > 0) {
+                    const wins = this.sessionCrashes.filter(c => c.win).length;
+                    const winRate = Math.round((wins / this.sessionCrashes.length) * 100);
+                    document.getElementById('sessionWinRate').textContent = `${winRate}%`;
                 } else {
-                    this.log('OnRegistration received but no history found', 'warning');
+                    document.getElementById('sessionWinRate').textContent = '--';
+                }
+
+                if (this.currentStreak > 0) {
+                    const streakDisplay = `${this.streakType === 'win' ? 'W' : 'L'}${this.currentStreak}`;
+                    document.getElementById('currentStreak').textContent = streakDisplay;
+                } else {
+                    document.getElementById('currentStreak').textContent = '--';
                 }
             }
 
             addToCrashHistory(value) {
                 this.crashHistory.unshift(value);
-                
-                // Keep only last 20 values
                 if (this.crashHistory.length > 20) {
                     this.crashHistory = this.crashHistory.slice(0, 20);
                 }
-                
                 this.updateCrashHistoryDisplay();
             }
 
@@ -566,38 +1298,41 @@
                 const container = document.getElementById('crashHistory');
                 
                 if (this.crashHistory.length === 0) {
-                    container.innerHTML = '<span style="color: #666; font-style: italic;">No crash values received yet</span>';
+                    container.innerHTML = '<span style="color: var(--text-muted);">No crash data yet</span>';
                     return;
                 }
                 
                 container.innerHTML = this.crashHistory
-                    .map(value => `<span class="crash-value">${value.toFixed(2)}</span>`)
+                    .map(value => {
+                        const isWin = value >= 2.0;
+                        return `<span class="crash-value ${isWin ? 'win' : 'loss'}">${value.toFixed(2)}${isWin ? '✓' : '✗'}</span>`;
+                    })
                     .join('');
             }
 
             updateConnectionStatus(status) {
-                const indicator = document.getElementById('statusIndicator');
-                const statusText = document.getElementById('connectionStatus');
-                const connectBtn = document.getElementById('connectBtn');
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                const btn = document.getElementById('connectBtn');
 
-                indicator.className = `status-indicator ${status}`;
+                dot.className = `status-dot ${status}`;
                 
                 switch (status) {
                     case 'connected':
-                        statusText.textContent = 'Connected';
-                        connectBtn.textContent = 'Disconnect';
-                        connectBtn.className = 'connect-btn disconnect';
+                        text.textContent = 'Connected';
+                        btn.textContent = 'Disconnect';
+                        btn.className = 'button btn-danger';
                         break;
                     case 'connecting':
-                        statusText.textContent = 'Connecting...';
-                        connectBtn.textContent = 'Connecting...';
-                        connectBtn.disabled = true;
+                        text.textContent = 'Connecting...';
+                        btn.textContent = 'Connecting...';
+                        btn.disabled = true;
                         break;
                     default:
-                        statusText.textContent = 'Disconnected';
-                        connectBtn.textContent = 'Connect';
-                        connectBtn.className = 'connect-btn';
-                        connectBtn.disabled = false;
+                        text.textContent = 'Disconnected';
+                        btn.textContent = 'Connect';
+                        btn.className = 'button btn-primary';
+                        btn.disabled = false;
                 }
             }
 
@@ -622,47 +1357,104 @@
             }
 
             log(message, type = 'info') {
-                const logContainer = document.getElementById('log');
+                const container = document.getElementById('log');
                 const entry = document.createElement('div');
                 entry.className = `log-entry ${type}`;
                 
                 const timestamp = new Date().toLocaleTimeString();
                 entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
                 
-                logContainer.appendChild(entry);
-                logContainer.scrollTop = logContainer.scrollHeight;
+                container.appendChild(entry);
+                container.scrollTop = container.scrollHeight;
                 
-                // Keep only last 100 entries for performance
-                while (logContainer.children.length > 100) {
-                    logContainer.removeChild(logContainer.firstChild);
+                while (container.children.length > 100) {
+                    container.removeChild(container.firstChild);
                 }
             }
 
             testWithSampleData() {
-                this.log('Testing with sample SignalR data...', 'info');
+                this.log('Testing with sample data...', 'info');
                 
-                // Sample frames as they would come from a real SignalR connection
-                const sampleFrames = [
-                    // Handshake response
+                const frames = [
                     '{}',
-                    // OnRegistration with history
                     '{"type":1,"target":"OnRegistration","arguments":[{"fs":[{"f":2.45},{"f":1.67},{"f":3.21},{"f":1.23},{"f":5.67}]}]}',
-                    // Individual crash events
                     '{"type":1,"target":"OnCrash","arguments":[{"f":2.89}]}',
                     '{"type":1,"target":"OnCrash","arguments":[{"f":1.45}]}',
                     '{"type":1,"target":"OnCrash","arguments":[{"f":7.23}]}',
-                    // Ping
-                    '{"type":6}'
+                    '{"type":1,"target":"OnCrash","arguments":[{"f":1.89}]}',
+                    '{"type":1,"target":"OnCrash","arguments":[{"f":3.45}]}'
                 ];
 
-                let delay = 0;
-                sampleFrames.forEach((frame, index) => {
-                    setTimeout(() => {
-                        this.log(`Processing sample frame ${index + 1}/${sampleFrames.length}`, 'info');
-                        this.processFrame(frame);
-                    }, delay);
-                    delay += 500;
+                frames.forEach((frame, i) => {
+                    setTimeout(() => this.processFrame(frame), i * 500);
                 });
+            }
+
+            generateSampleStats() {
+                this.log('Generating sample statistics...', 'info');
+                
+                const now = new Date();
+                for (let d = 0; d < 14; d++) {
+                    const date = new Date(now);
+                    date.setDate(now.getDate() - d);
+                    
+                    const hours = Math.floor(Math.random() * 12) + 6;
+                    const selectedHours = new Set();
+                    while (selectedHours.size < hours) {
+                        selectedHours.add(Math.floor(Math.random() * 24));
+                    }
+                    
+                    selectedHours.forEach(hour => {
+                        const crashes = Math.floor(Math.random() * 50) + 10;
+                        const baseWinRate = 0.4 + Math.random() * 0.4;
+                        
+                        const key = `${date.toDateString()}_${hour}`;
+                        this.statistics[key] = {
+                            day: date.getDay(),
+                            hour,
+                            date: date.toDateString(),
+                            crashes: [],
+                            wins: 0,
+                            losses: 0,
+                            maxLossStreak: 0,
+                            currentLossStreak: 0
+                        };
+                        
+                        const stats = this.statistics[key];
+                        let currentLossStreak = 0;
+                        
+                        for (let i = 0; i < crashes; i++) {
+                            const isWin = Math.random() < baseWinRate;
+                            const value = isWin ? 2.0 + Math.random() * 8 : 0.1 + Math.random() * 1.9;
+                            
+                            stats.crashes.push({ value, timestamp: Date.now() - i * 1000, win: isWin });
+                            
+                            if (isWin) {
+                                stats.wins++;
+                                currentLossStreak = 0;
+                            } else {
+                                stats.losses++;
+                                currentLossStreak++;
+                                stats.maxLossStreak = Math.max(stats.maxLossStreak, currentLossStreak);
+                            }
+                        }
+                    });
+                }
+                
+                this.saveStatistics();
+                this.updateStatsTable();
+                this.updateSummaryCards();
+                this.log('Sample data generated successfully', 'success');
+            }
+
+            clearStatistics() {
+                if (confirm('Clear all statistics? This cannot be undone.')) {
+                    this.statistics = {};
+                    this.saveStatistics();
+                    this.updateStatsTable();
+                    this.updateSummaryCards();
+                    this.log('Statistics cleared', 'warning');
+                }
             }
 
             clearLog() {
@@ -671,32 +1463,33 @@
             }
         }
 
-        // Global instance
-        let demo;
+        let analytics;
 
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            demo = new SignalRWebSocketDemo();
+        document.addEventListener('DOMContentLoaded', () => {
+            analytics = new SignalRAnalytics();
         });
 
-        // Connection toggle function
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
         function toggleConnection() {
-            if (demo.websocket && demo.websocket.readyState === WebSocket.OPEN) {
-                demo.disconnect();
+            if (analytics.websocket && analytics.websocket.readyState === WebSocket.OPEN) {
+                analytics.disconnect();
             } else {
-                demo.connect();
+                analytics.connect();
             }
         }
 
-        // Test function
-        function testWithSampleData() {
-            demo.testWithSampleData();
-        }
-
-        // Clear log function
-        function clearLog() {
-            demo.clearLog();
-        }
+        function testWithSampleData() { analytics.testWithSampleData(); }
+        function updateStatsTable() { analytics.updateStatsTable(); }
+        function clearStatistics() { analytics.clearStatistics(); }
+        function generateSampleStats() { analytics.generateSampleStats(); }
+        function clearLog() { analytics.clearLog(); }
     </script>
 </body>
 </html>
